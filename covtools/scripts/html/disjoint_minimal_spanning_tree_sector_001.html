@@ -1,0 +1,742 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Script file to generate minimal spanning tree</title>
+      <meta name="generator" content="MATLAB 7.8">
+      <meta name="date" content="2009-03-27">
+      <meta name="m-file" content="disjoint_minimal_spanning_tree_sector_001"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Script file to generate minimal spanning tree</h1>
+         <!--introduction-->
+         <p>See Also : COVTOOLS, SECTOR</p>
+         <!--/introduction-->
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">initialise</a></li>
+               <li><a href="#2">Input Data and Variables</a></li>
+               <li><a href="#3">initialise</a></li>
+               <li><a href="#4">Keep only the 50 largest stocks by MV</a></li>
+               <li><a href="#5">construct the correlation matrix</a></li>
+               <li><a href="#6">Construct the market portfolio</a></li>
+               <li><a href="#7">find the 4 accumlated return bins</a></li>
+               <li><a href="#8">find the 4 accumlated return bins</a></li>
+               <li><a href="#9">Process the correlation matrices</a></li>
+            </ul>
+         </div>
+         <h2>initialise<a name="1"></a></h2><pre class="codeinput">clear <span class="string">all</span>; close <span class="string">all</span>; clc;
+</pre><pre class="codeoutput">Warning: Closing all open AVI files. It is no
+longer possible to write to any previously open
+AVI files. 
+</pre><h2>Input Data and Variables<a name="2"></a></h2>
+         <p>Initial beta</p><pre class="codeinput">ib      = 1;
+<span class="comment">% Final beta</span>
+fb      = 50;
+<span class="comment">% Number of sweeps between changes in temperature</span>
+t_steps = 100;    <span class="comment">% temperature changes every t_steps</span>
+<span class="comment">% Max. number of annealing cycles</span>
+n_cycles= 150;
+<span class="comment">% Cooling Factor for delta_temperature</span>
+cf      = 0.997;
+</pre><h2>initialise<a name="3"></a></h2><pre class="codeinput">load(<span class="string">'data/JSE_D_LJSEOVER_31Jan1994_22Jan2009'</span>);
+</pre><h2>Keep only the 50 largest stocks by MV<a name="4"></a></h2><pre class="codeinput">mv = jse_fts{3};
+mv = mv(<span class="string">'31-Jan-2008::20-Jan-2009'</span>);
+mv = fts2mat(mv); <span class="comment">% MV</span>
+tickers = fieldnames(jse_fts{3},1);
+[smv, si]= sort(nanmedian(mv),<span class="string">'descend'</span>);
+sizeidx = si(1:50);
+tickers0 = tickers(sizeidx);
+mv = mv(:,sizeidx);
+xfts = jse_fts{2}; <span class="comment">% RI</span>
+xfts = xfts.(tickers0);
+</pre><h2>construct the correlation matrix<a name="5"></a></h2>
+         <p>find the date range April 2008 - Jan 2009</p><pre class="codeinput">xfts = xfts(<span class="string">'31-Jan-2008::20-Jan-2009'</span>);
+<span class="comment">% find continuous time returns</span>
+rfts = tick2ret(xfts);
+<span class="comment">% convert into matrix</span>
+x = fts2mat(rfts);
+<span class="comment">% remove the market mode</span>
+x0 = x;
+x0(isnan(x0))=0;
+<span class="comment">% x0 = average(x0);</span>
+<span class="comment">% covariance matrix : can use EWMA</span>
+<span class="comment">% r0 = corr(x,'rows','pairwise');</span>
+[c,s,m]=ewmacov(x0);
+</pre><h2>Construct the market portfolio<a name="6"></a></h2><pre class="codeinput">MarketWts = mv ./ repmat(transpose(sum(transpose(mv))),1,size(mv,2));
+MarketRet = x .* MarketWts;
+MarketRet = transpose(sum(transpose(MarketRet)));
+MarketRet(isnan(MarketRet))=0;
+MarketRet(1) = 1;
+MarketPrice = cumsum(MarketRet);
+MarketPrice = fints(rfts.dates,MarketPrice,<span class="string">'JSE'</span>,rfts.freq,<span class="string">'Index'</span>);
+</pre><h2>find the 4 accumlated return bins<a name="7"></a></h2><pre class="codeinput">PriceIndex = ret2tick(rfts);
+nt=ntile(fts2mat(PriceIndex)',3)';
+ntc = {<span class="string">'red'</span>,<span class="string">'yellow'</span>,<span class="string">'green'</span>};
+</pre><h2>find the 4 accumlated return bins<a name="8"></a></h2><pre class="codeinput">nt = m;
+nt(m&gt;0) = 3;
+nt(m&lt;=0) = 1;
+ntc = {<span class="string">'red'</span>,<span class="string">'yellow'</span>,<span class="string">'green'</span>};
+</pre><h2>Process the correlation matrices<a name="9"></a></h2><pre class="codeinput">clear <span class="string">Dmov</span>;
+aviobj = avifile(<span class="string">'JSE_D_LJSEOVER_dendrogram.avi'</span>,<span class="string">'FPS'</span>,1);
+scrsz = get(0,<span class="string">'ScreenSize'</span>);
+fig=figure(<span class="string">'Position'</span>,scrsz);
+<span class="comment">% axes1 = axes(fig,'Position',[0.13 0.688 0.775 0.237]);</span>
+<span class="keyword">for</span> ti=60:size(s,3),
+    r0 = squeeze(s(:,:,ti));
+    <span class="comment">% remove nan correlations</span>
+    r0(isnan(r0)) = 0;
+    <span class="comment">% cleaned covariance matrix</span>
+    Q = size(x,1)/size(x,2); <span class="comment">% quality ratio N-dates, M-securities</span>
+    r0 = cov2clean(r0,Q);
+    <span class="comment">% make the correlation matrix positive semi-definite</span>
+    r0 = posdef(r0);
+    <span class="comment">% Simulated annealing disjoint clustering algo</span>
+    [A] = annealing(r0,ib,fb,t_steps,n_cycles,cf);
+    <span class="comment">% Membership Matrix: Rows-Clusters, Columns-Objects</span>
+    A.gs.I
+    <span class="comment">% The configuration index I, where I(i,j)=k gives k object as the</span>
+    <span class="comment">% j-th element of the i-th cluster.</span>
+    cin = max(max(A.gs.I));
+    tci = 0;
+    <span class="keyword">for</span> ci=1:size(A.gs.I,1)
+        ci0 = A.gs.I(ci,:);
+        ci0 = ci0(ci0~=0);
+        cixy0 = false(1,cin);
+        <span class="keyword">if</span> ~isempty(ci0),
+            cixy0(ci0)=true;
+            tci = tci+1;
+            cixy(tci,:) = cixy0;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="keyword">for</span> cj=1:size(cixy,1)
+        <span class="comment">% correlation matrix to distance measure of stocks within cluster</span>
+        <span class="keyword">if</span> sum(cixy(cj,:))&gt;1,
+            d0 = 1 - r0(cixy(cj,:),cixy(cj,:)); <span class="comment">% correlation distance matrix</span>
+            [m,n]=size(d0);
+            <span class="keyword">for</span> i=1:n-1,
+                <span class="keyword">for</span> j=i+1:n,
+                    d((i-1)*(m-i/2)+j-i) = d0(i,j);
+                <span class="keyword">end</span>
+            <span class="keyword">end</span>
+            <span class="comment">% create the linkage vector</span>
+            z0 = linkage(d);
+            <span class="comment">% find the minimal spanning tree</span>
+            a0 = adjacency(d);
+            <span class="comment">% find the minimal spanning tree using kruskal algo</span>
+            [mst{cj},nmst{cj},t{cj}]=minspantree(a0);
+            <span class="comment">% find the coordinates</span>
+            [xy{cj}] = mstcoords(t{cj});
+            <span class="comment">% the tickers</span>
+            tickersc{cj} = tickers0(cixy(cj,:));
+        <span class="keyword">else</span>
+            <span class="comment">% single point</span>
+            xy{cj} = [0,0];
+            t{cj} = 1;
+            tickersc{cj} = tickers0(cixy(cj,:));
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% plot</span>
+    disjointmstplot(t,xy,[],tickersc,true,nt,{<span class="string">'r'</span>,<span class="string">'b'</span>,<span class="string">'g'</span>});
+    title(sprintf(<span class="string">'Tree on %s'</span>,datestr(today-size(x0,1)+ti)));
+    Dmov(ti) = getframe(fig);
+    F = getframe(fig);
+    aviobj = addframe(aviobj,F);
+<span class="keyword">end</span>
+close(fig)
+aviobj = close(aviobj);
+</pre><pre class="codeoutput">
+ans =
+
+  Columns 1 through 8
+
+    46    21    18     0     0     0     0     0
+    31    27     0     0     0     0     0     0
+    24     0     0     0     0     0     0     0
+     4    50     0     0     0     0     0     0
+    44     0     0     0     0     0     0     0
+    25     0     0     0     0     0     0     0
+     2    14    49     0     0     0     0     0
+     8     5     0     0     0     0     0     0
+    26     0     0     0     0     0     0     0
+    16     6    33     0     0     0     0     0
+    17     0     0     0     0     0     0     0
+    35     7    28     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    42     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    34     0     0     0     0     0     0     0
+    19     0     0     0     0     0     0     0
+    15     0     0     0     0     0     0     0
+     9    45     0     0     0     0     0     0
+    30     1     0     0     0     0     0     0
+     3     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    12     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    39     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    38     0     0     0     0     0     0     0
+    13     0     0     0     0     0     0     0
+    40    48    41     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    36     0     0     0     0     0     0     0
+    10     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    37    22     0     0     0     0     0     0
+    23     0     0     0     0     0     0     0
+    11     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    47     0     0     0     0     0     0     0
+    20    32     0     0     0     0     0     0
+    43     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+    29     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+
+  Columns 9 through 16
+
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+
+  Columns 17 through 24
+
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+
+  Columns 25 through 32
+
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+
+  Columns 33 through 40
+
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+
+  Columns 41 through 48
+
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+     0     0     0     0     0     0     0     0
+
+  Columns 49 through 50
+
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+     0     0
+
+</pre><pre class="codeoutput">Cell contents reference from a non-cell array object.
+
+Error in ==&gt; disjointmstplot at 33
+    [h,mst{i}]  = mstplot(t{i},xy{i},LineSpec,labels{i},wtsflag,vp{i},bc); 
+
+Error in ==&gt; disjoint_minimal_spanning_tree_sector_001 at 133
+    disjointmstplot(t,xy,[],tickersc,true,nt,{'r','b','g'});
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.8<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Script file to generate minimal spanning tree 
+%
+% See Also : COVTOOLS, SECTOR
+
+% $Revision: 1.1 $ $Date: 2009/03/24 15:19:32 $ $Author: Tim Gebbie $
+
+%% initialise
+clear all; close all; clc;
+
+%% Input Data and Variables 
+% Initial beta
+ib      = 1;     
+% Final beta
+fb      = 50;  
+% Number of sweeps between changes in temperature
+t_steps = 100;    % temperature changes every t_steps 
+% Max. number of annealing cycles                   
+n_cycles= 150; 
+% Cooling Factor for delta_temperature
+cf      = 0.997; 
+
+%% initialise
+load('data/JSE_D_LJSEOVER_31Jan1994_22Jan2009');
+
+%% Keep only the 50 largest stocks by MV
+mv = jse_fts{3};
+mv = mv('31-Jan-2008::20-Jan-2009');
+mv = fts2mat(mv); % MV
+tickers = fieldnames(jse_fts{3},1);
+[smv, si]= sort(nanmedian(mv),'descend');
+sizeidx = si(1:50);
+tickers0 = tickers(sizeidx);
+mv = mv(:,sizeidx);
+xfts = jse_fts{2}; % RI
+xfts = xfts.(tickers0);
+
+%% construct the correlation matrix
+% find the date range April 2008 - Jan 2009
+xfts = xfts('31-Jan-2008::20-Jan-2009');
+% find continuous time returns
+rfts = tick2ret(xfts);
+% convert into matrix
+x = fts2mat(rfts);
+% remove the market mode
+x0 = x;
+x0(isnan(x0))=0;
+% x0 = average(x0);
+% covariance matrix : can use EWMA
+% r0 = corr(x,'rows','pairwise');
+[c,s,m]=ewmacov(x0);
+
+%% Construct the market portfolio
+MarketWts = mv ./ repmat(transpose(sum(transpose(mv))),1,size(mv,2));
+MarketRet = x .* MarketWts;
+MarketRet = transpose(sum(transpose(MarketRet)));
+MarketRet(isnan(MarketRet))=0;
+MarketRet(1) = 1;
+MarketPrice = cumsum(MarketRet);
+MarketPrice = fints(rfts.dates,MarketPrice,'JSE',rfts.freq,'Index');
+
+%% find the 4 accumlated return bins
+PriceIndex = ret2tick(rfts);
+nt=ntile(fts2mat(PriceIndex)',3)';
+ntc = {'red','yellow','green'};
+
+%% find the 4 accumlated return bins
+nt = m;
+nt(m>0) = 3;
+nt(m<=0) = 1;
+ntc = {'red','yellow','green'};
+
+%% Process the correlation matrices
+clear Dmov;
+aviobj = avifile('JSE_D_LJSEOVER_dendrogram.avi','FPS',1);
+scrsz = get(0,'ScreenSize');
+fig=figure('Position',scrsz);
+% axes1 = axes(fig,'Position',[0.13 0.688 0.775 0.237]);
+for ti=60:size(s,3),
+    r0 = squeeze(s(:,:,ti));
+    % remove nan correlations
+    r0(isnan(r0)) = 0;
+    % cleaned covariance matrix
+    Q = size(x,1)/size(x,2); % quality ratio N-dates, M-securities
+    r0 = cov2clean(r0,Q);
+    % make the correlation matrix positive semi-definite
+    r0 = posdef(r0);
+    % Simulated annealing disjoint clustering algo
+    [A] = annealing(r0,ib,fb,t_steps,n_cycles,cf);
+    % Membership Matrix: Rows-Clusters, Columns-Objects
+    A.gs.I
+    % The configuration index I, where I(i,j)=k gives k object as the
+    % j-th element of the i-th cluster.
+    cin = max(max(A.gs.I));
+    tci = 0;
+    for ci=1:size(A.gs.I,1)
+        ci0 = A.gs.I(ci,:);
+        ci0 = ci0(ci0~=0);
+        cixy0 = false(1,cin);
+        if ~isempty(ci0),
+            cixy0(ci0)=true;
+            tci = tci+1;
+            cixy(tci,:) = cixy0;
+        end
+    end
+    for cj=1:size(cixy,1)
+        % correlation matrix to distance measure of stocks within cluster
+        if sum(cixy(cj,:))>1,
+            d0 = 1 - r0(cixy(cj,:),cixy(cj,:)); % correlation distance matrix
+            [m,n]=size(d0);
+            for i=1:n-1,
+                for j=i+1:n,
+                    d((i-1)*(m-i/2)+j-i) = d0(i,j);
+                end
+            end
+            % create the linkage vector
+            z0 = linkage(d);
+            % find the minimal spanning tree
+            a0 = adjacency(d);
+            % find the minimal spanning tree using kruskal algo
+            [mst{cj},nmst{cj},t{cj}]=minspantree(a0);
+            % find the coordinates
+            [xy{cj}] = mstcoords(t{cj});
+            % the tickers
+            tickersc{cj} = tickers0(cixy(cj,:));
+        else
+            % single point
+            xy{cj} = [0,0];
+            t{cj} = 1;
+            tickersc{cj} = tickers0(cixy(cj,:));
+        end
+    end
+    % plot
+    disjointmstplot(t,xy,[],tickersc,true,nt,{'r','b','g'});
+    title(sprintf('Tree on %s',datestr(today-size(x0,1)+ti)));
+    Dmov(ti) = getframe(fig);
+    F = getframe(fig);
+    aviobj = addframe(aviobj,F);
+end
+close(fig)
+aviobj = close(aviobj);
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

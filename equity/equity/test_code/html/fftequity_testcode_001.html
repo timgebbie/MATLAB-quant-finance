@@ -1,0 +1,343 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>FFT pricing algorithm using Carr-Madan formulae</title>
+      <meta name="generator" content="MATLAB 7.3">
+      <meta name="date" content="2006-11-08">
+      <meta name="m-file" content="fftequity_testcode_001"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>FFT pricing algorithm using Carr-Madan formulae</h1>
+         <introduction></introduction>
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">Vanilla black-scholes</a></li>
+               <li><a href="#2">Black-Scholes (BS)</a></li>
+               <li><a href="#3">VG (Variance Gamma)</a></li>
+               <li><a href="#4">HESTON (heston stochastic vol)</a></li>
+               <li><a href="#5">VGMC (variance gamma mean correcting)</a></li>
+               <li><a href="#6">BSGA (black scholes with gamma vol)</a></li>
+               <li><a href="#7">HESTON+ (Heston with jumps)</a></li>
+            </ul>
+         </div>
+         <h2>Vanilla black-scholes<a name="1"></a></h2>
+         <p>Price, Strike, Rate, Time, Volatility, Yield)</p><pre class="codeinput">blsprice(100,100,0.02,1,0.2,0)
+</pre><pre class="codeoutput">
+ans =
+
+    8.9160
+
+</pre><h2>Black-Scholes (BS)<a name="2"></a></h2>
+         <p>parameters</p><pre class="codeinput">p = [100,0.02,0,0.2,1];
+<span class="comment">% characteristic fn</span>
+rnfftcf(0,p,<span class="string">'bs'</span>)
+rnfftcf(i,p,<span class="string">'bs'</span>)
+<span class="comment">%   1.0000             0.8955 + 0.4442i   0.6040 + 0.7950i</span>
+rnfftcf([0 0.1 0.2],[100,0.02,0,0.2,2],<span class="string">'bs'</span>);
+<span class="comment">% price using Carr-Madan</span>
+[ecp,eck]=fftcfprc(p,<span class="string">'bs'</span>);
+<span class="comment">% get the right strikes</span>
+k = exp(eck(2700:2900));
+c = ecp(2700:2900);
+<span class="comment">% plot the strikes of interest</span>
+subplot(2,1,1);
+plot(k,c);
+xlabel(<span class="string">'Strikes'</span>);
+ylabel(<span class="string">'Prices'</span>);
+title(<span class="string">'BS Carr-Madan vs. Black-Scholes'</span>);
+<span class="comment">% price ATM</span>
+<span class="comment">% grid variables</span>
+n = 4096;
+a = 1.5;
+e = 0.25;
+<span class="comment">% [ecp,eck]=fftcfprc(p,'bs',n,a,e);</span>
+<span class="comment">% compare to BS</span>
+bsc = blsprice(100,k,0.02,1,0.2,0);
+h=line(k,bsc);
+set(h,<span class="string">'Color'</span>,<span class="string">'r'</span>,<span class="string">'LineStyle'</span>,<span class="string">':'</span>);
+legend(<span class="string">'BS Carr-Madan'</span>,<span class="string">'Black-Scholes'</span>);
+subplot(2,1,2);
+plot(k,[(c-bsc)./bsc; c-bsc]);
+legend(<span class="string">'Percentage Difference'</span>,<span class="string">'Absolute Difference'</span>);
+</pre><pre class="codeoutput">
+ans =
+
+     1
+
+
+ans =
+
+    0.0102
+
+</pre><img vspace="5" hspace="5" src="fftequity_testcode_001_01.png"> <h2>VG (Variance Gamma)<a name="3"></a></h2>
+         <p>parameters</p><pre class="codeinput">p = [100,0.02,0,0.2,1,1,5,5];
+<span class="comment">% characteristic fn</span>
+rnfftcf(0,p,<span class="string">'vg'</span>)
+rnfftcf(i,p,<span class="string">'vg'</span>)
+<span class="comment">% price using Carr-Madan</span>
+[ecp,eck]=fftcfprc(p,<span class="string">'vg'</span>);
+<span class="comment">% get the right strikes</span>
+k = exp(eck(2700:2900));
+c = ecp(2700:2900);
+<span class="comment">% plot the strikes of interest</span>
+subplot(2,1,1);
+plot(k,c);
+xlabel(<span class="string">'Strikes'</span>);
+ylabel(<span class="string">'Prices'</span>);
+title(<span class="string">'VG Carr-Madan vs. Black-Scholes'</span>);
+<span class="comment">% price ATM</span>
+<span class="comment">% grid variables</span>
+n = 4096;
+a = 1.5;
+e = 0.25;
+<span class="comment">% [ecp,eck]=fftcfprc(p,'bs',n,a,e);</span>
+<span class="comment">% compare to BS</span>
+bsc = blsprice(100,k,0.02,1,0.2,0);
+h=line(k,bsc);
+set(h,<span class="string">'Color'</span>,<span class="string">'r'</span>,<span class="string">'LineStyle'</span>,<span class="string">':'</span>);
+legend(<span class="string">'VG Carr-Madan'</span>,<span class="string">'Black-Scholes'</span>);
+subplot(2,1,2);
+plot(k,[(c-bsc)./bsc; c-bsc]);
+legend(<span class="string">'Percentage Difference'</span>,<span class="string">'Absolute Difference'</span>);
+</pre><pre class="codeoutput">
+ans =
+
+     1
+
+
+ans =
+
+    0.0125
+
+</pre><img vspace="5" hspace="5" src="fftequity_testcode_001_02.png"> <h2>HESTON (heston stochastic vol)<a name="4"></a></h2>
+         <p>parameters</p><pre class="codeinput">p = [100,0.02,0,0.2,1,1.5,0.18,0.6,-0.5];
+<span class="comment">% characteristic fn</span>
+rnfftcf(0,p,<span class="string">'hest'</span>)
+rnfftcf(i,p,<span class="string">'hest'</span>)
+<span class="comment">% price using Carr-Madan</span>
+[ecp,eck]=fftcfprc(p,<span class="string">'hest'</span>);
+<span class="comment">% get the right strikes</span>
+k = exp(eck(2700:2900));
+c = ecp(2700:2900);
+<span class="comment">% plot the strikes of interest</span>
+subplot(2,1,1);
+plot(k,c);
+xlabel(<span class="string">'Strikes'</span>);
+ylabel(<span class="string">'Prices'</span>);
+title(<span class="string">'Heston-Carr-Madan vs. Black-Scholes'</span>);
+<span class="comment">% price ATM</span>
+<span class="comment">% grid variables</span>
+n = 4096;
+a = 1.5;
+e = 0.25;
+<span class="comment">% [ecp,eck]=fftcfprc(p,'bs',n,a,e);</span>
+<span class="comment">% compare to BS</span>
+bsc = blsprice(100,k,0.02,1,0.2,0);
+h=line(k,bsc);
+set(h,<span class="string">'Color'</span>,<span class="string">'r'</span>,<span class="string">'LineStyle'</span>,<span class="string">':'</span>);
+legend(<span class="string">'Heston-Carr-Madan'</span>,<span class="string">'Black-Scholes'</span>);
+subplot(2,1,2);
+plot(k,[(c-bsc)./bsc; c-bsc]);
+legend(<span class="string">'Percentage Difference'</span>,<span class="string">'Absolute Difference'</span>);
+</pre><pre class="codeoutput">
+ans =
+
+     1
+
+
+ans =
+
+    0.0034
+
+</pre><img vspace="5" hspace="5" src="fftequity_testcode_001_03.png"> <h2>VGMC (variance gamma mean correcting)<a name="5"></a></h2><pre class="codeinput">fftcfprc(u,p,<span class="string">'vgmc'</span>);
+</pre><pre class="codeoutput">Error using ==&gt; evalin
+Undefined function or variable 'u'.</pre><h2>BSGA (black scholes with gamma vol)<a name="6"></a></h2><pre class="codeinput">fftcfprc(u,p,<span class="string">'bsga'</span>);
+</pre><h2>HESTON+ (Heston with jumps)<a name="7"></a></h2><pre class="codeinput">fftcfpc(u,p,<span class="string">'hestp'</span>);
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.3<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% FFT pricing algorithm using Carr-Madan formulae
+
+%% Vanilla black-scholes
+% Price, Strike, Rate, Time, Volatility, Yield)
+blsprice(100,100,0.02,1,0.2,0)
+
+%% Black-Scholes (BS)
+% parameters
+p = [100,0.02,0,0.2,1];
+% characteristic fn
+rnfftcf(0,p,'bs')
+rnfftcf(i,p,'bs')
+%   1.0000             0.8955 + 0.4442i   0.6040 + 0.7950i
+rnfftcf([0 0.1 0.2],[100,0.02,0,0.2,2],'bs');
+% price using Carr-Madan
+[ecp,eck]=fftcfprc(p,'bs');
+% get the right strikes
+k = exp(eck(2700:2900));
+c = ecp(2700:2900);
+% plot the strikes of interest
+subplot(2,1,1);
+plot(k,c);
+xlabel('Strikes');
+ylabel('Prices');
+title('BS Carr-Madan vs. Black-Scholes');
+% price ATM
+% grid variables
+n = 4096;
+a = 1.5;
+e = 0.25;
+% [ecp,eck]=fftcfprc(p,'bs',n,a,e);
+% compare to BS
+bsc = blsprice(100,k,0.02,1,0.2,0);
+h=line(k,bsc);
+set(h,'Color','r','LineStyle',':');
+legend('BS Carr-Madan','Black-Scholes');
+subplot(2,1,2);
+plot(k,[(c-bsc)./bsc; c-bsc]);
+legend('Percentage Difference','Absolute Difference');
+
+%% VG (Variance Gamma)
+% parameters
+p = [100,0.02,0,0.2,1,1,5,5];
+% characteristic fn
+rnfftcf(0,p,'vg')
+rnfftcf(i,p,'vg')
+% price using Carr-Madan
+[ecp,eck]=fftcfprc(p,'vg');
+% get the right strikes
+k = exp(eck(2700:2900));
+c = ecp(2700:2900);
+% plot the strikes of interest
+subplot(2,1,1);
+plot(k,c);
+xlabel('Strikes');
+ylabel('Prices');
+title('VG Carr-Madan vs. Black-Scholes');
+% price ATM
+% grid variables
+n = 4096;
+a = 1.5;
+e = 0.25;
+% [ecp,eck]=fftcfprc(p,'bs',n,a,e);
+% compare to BS
+bsc = blsprice(100,k,0.02,1,0.2,0);
+h=line(k,bsc);
+set(h,'Color','r','LineStyle',':');
+legend('VG Carr-Madan','Black-Scholes');
+subplot(2,1,2);
+plot(k,[(c-bsc)./bsc; c-bsc]);
+legend('Percentage Difference','Absolute Difference');
+
+%% HESTON (heston stochastic vol)
+% parameters
+p = [100,0.02,0,0.2,1,1.5,0.18,0.6,-0.5];
+% characteristic fn
+rnfftcf(0,p,'hest')
+rnfftcf(i,p,'hest')
+% price using Carr-Madan
+[ecp,eck]=fftcfprc(p,'hest');
+% get the right strikes
+k = exp(eck(2700:2900));
+c = ecp(2700:2900);
+% plot the strikes of interest
+subplot(2,1,1);
+plot(k,c);
+xlabel('Strikes');
+ylabel('Prices');
+title('Heston-Carr-Madan vs. Black-Scholes');
+% price ATM
+% grid variables
+n = 4096;
+a = 1.5;
+e = 0.25;
+% [ecp,eck]=fftcfprc(p,'bs',n,a,e);
+% compare to BS
+bsc = blsprice(100,k,0.02,1,0.2,0);
+h=line(k,bsc);
+set(h,'Color','r','LineStyle',':');
+legend('Heston-Carr-Madan','Black-Scholes');
+subplot(2,1,2);
+plot(k,[(c-bsc)./bsc; c-bsc]);
+legend('Percentage Difference','Absolute Difference');
+
+%% VGMC (variance gamma mean correcting)
+fftcfprc(u,p,'vgmc');
+
+%% BSGA (black scholes with gamma vol)
+fftcfprc(u,p,'bsga');
+
+%% HESTON+ (Heston with jumps)
+fftcfpc(u,p,'hestp');
+
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

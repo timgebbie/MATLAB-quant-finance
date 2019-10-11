@@ -1,0 +1,264 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Script file to generate minimal spanning tree</title>
+      <meta name="generator" content="MATLAB 7.8">
+      <meta name="date" content="2009-03-17">
+      <meta name="m-file" content="minimal_spanning_tree_test"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Script file to generate minimal spanning tree</h1>
+         <!--introduction-->
+         <p>See Also : COVTOOLS</p>
+         <!--/introduction-->
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">initialise</a></li>
+               <li><a href="#2">Keep only the 50 largest stocks by MV</a></li>
+               <li><a href="#3">construct the correlation matrix</a></li>
+               <li><a href="#4">Construct the market portfolio</a></li>
+               <li><a href="#5">find the 4 accumlated return bins</a></li>
+               <li><a href="#6">find the 4 accumlated return bins</a></li>
+               <li><a href="#7">Process the correlation matrices</a></li>
+            </ul>
+         </div>
+         <h2>initialise<a name="1"></a></h2><pre class="codeinput">clear <span class="string">all</span>; clc;
+</pre><h2>Keep only the 50 largest stocks by MV<a name="2"></a></h2><pre class="codeinput">x = randn(50,7);
+mv = ret2tick(dmv);
+tickers0 = {<span class="string">'A'</span>,<span class="string">'B'</span>,<span class="string">'C'</span>,<span class="string">'D'</span>,<span class="string">'E'</span>,<span class="string">'F'</span>,<span class="string">'G'</span>};
+</pre><pre class="codeoutput">Undefined function or variable 'dmv'.
+
+Error in ==&gt; minimal_spanning_tree_test at 12
+mv = ret2tick(dmv);
+</pre><h2>construct the correlation matrix<a name="3"></a></h2>
+         <p>remove the market mode</p><pre class="codeinput">x0 = x;
+x0(isnan(x0))=0;
+x0 = average(x);
+[c,s,m]=ewmacov(x0);
+</pre><h2>Construct the market portfolio<a name="4"></a></h2><pre class="codeinput">MarketWts = mv ./ repmat(transpose(sum(transpose(mv))),1,size(mv,2));
+MarketRet = x .* MarketWts;
+MarketRet = transpose(sum(transpose(MarketRet)));
+MarketRet(isnan(MarketRet))=0;
+MarketRet(1) = 1;
+MarketPrice = cumsum(MarketRet);
+MarketPrice = fints(rfts.dates,MarketPrice,<span class="string">'JSE'</span>,rfts.freq,<span class="string">'Index'</span>);
+</pre><h2>find the 4 accumlated return bins<a name="5"></a></h2><pre class="codeinput">PriceIndex = ret2tick(rfts);
+nt=ntile(fts2mat(PriceIndex)',3)';
+ntc = {<span class="string">'red'</span>,<span class="string">'yellow'</span>,<span class="string">'green'</span>};
+</pre><h2>find the 4 accumlated return bins<a name="6"></a></h2><pre class="codeinput">nt = m;
+nt(m&gt;0) = 3;
+nt(m&lt;=0) = 1;
+ntc = {<span class="string">'red'</span>,<span class="string">'yellow'</span>,<span class="string">'green'</span>};
+</pre><h2>Process the correlation matrices<a name="7"></a></h2><pre class="codeinput">clear <span class="string">Dmov</span>;
+aviobj = avifile(<span class="string">'MST.avi'</span>,<span class="string">'FPS'</span>,1);
+scrsz = get(0,<span class="string">'ScreenSize'</span>);
+fig=figure(<span class="string">'Position'</span>,scrsz);
+<span class="comment">% axes1 = axes(fig,'Position',[0.13 0.688 0.775 0.237]);</span>
+<span class="keyword">for</span> ti=1:size(s,3),
+    r0 = squeeze(s(:,:,ti));
+    <span class="comment">% remove nan correlations</span>
+    r0(isnan(r0)) = 0;
+    <span class="comment">% cleaned covariance matrix</span>
+    Q = size(x,1)/size(x,2); <span class="comment">% quality ratio N-dates, M-securities</span>
+    r0 = cov2clean(r0,Q);
+    <span class="comment">% make the correlation matrix positive semi-definite</span>
+    r0 = posdef(r0);
+    <span class="comment">% correlation matrix to distance measure</span>
+    d0 = 1 - r0; <span class="comment">% correlation distance matrix</span>
+    [m,n]=size(d0);
+    <span class="keyword">for</span> i=1:n-1,
+        <span class="keyword">for</span> j=i+1:n,
+            d((i-1)*(m-i/2)+j-i) = d0(i,j);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    <span class="comment">% create the linkage vector</span>
+    z0 = linkage(d);
+    <span class="comment">% find the minimal spanning tree</span>
+    a0 = adjacency(d);
+    <span class="comment">% find the minimal spanning tree using kruskal algo</span>
+    [mst,nmst,t]=minspantree(a0);
+    <span class="comment">% find the coordinates</span>
+    [xy] = mstcoords(t);
+    <span class="comment">% create the date line</span>
+    subplot(4,1,1);
+    h=plot(MarketPrice);
+    h1=line(MarketPrice.dates(ti) * ones(1,2),get(gca,<span class="string">'YLim'</span>),<span class="string">'Color'</span>,<span class="string">'b'</span>,<span class="string">'LineWidth'</span>,2);
+    <span class="comment">% create the spanning tree plot</span>
+    subplot(4,1,[2 3 4]);
+    <span class="comment">% plot</span>
+    mstplot(t,xy,[],tickers0,true,nt(ti,:),{<span class="string">'r'</span>,<span class="string">'b'</span>,<span class="string">'g'</span>})
+    set(gca,<span class="string">'Ylim'</span>,[-5 5],<span class="string">'Xlim'</span>,[-5 14]);
+    daspect([1 1 1]);
+    <span class="comment">% title</span>
+    title(sprintf(<span class="string">'Tree on %s'</span>,datestr(today-size(s,3)+ti)));
+    Dmov(ti) = getframe(fig);
+    F = getframe(fig);
+    aviobj = addframe(aviobj,F);
+<span class="keyword">end</span>
+close(fig)
+aviobj = close(aviobj);
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.8<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Script file to generate minimal spanning tree 
+%
+% See Also : COVTOOLS
+
+% $Revision: 1.2 $ $Date: 2009/02/27 07:34:42 $ $Author: Tim Gebbie $
+
+%% initialise
+clear all; clc;
+
+%% Keep only the 50 largest stocks by MV
+x = randn(50,7);
+mv = ret2tick(dmv);
+tickers0 = {'A','B','C','D','E','F','G'};
+
+%% construct the correlation matrix
+% remove the market mode
+x0 = x;
+x0(isnan(x0))=0;
+x0 = average(x);
+[c,s,m]=ewmacov(x0);
+
+%% Construct the market portfolio
+MarketWts = mv ./ repmat(transpose(sum(transpose(mv))),1,size(mv,2));
+MarketRet = x .* MarketWts;
+MarketRet = transpose(sum(transpose(MarketRet)));
+MarketRet(isnan(MarketRet))=0;
+MarketRet(1) = 1;
+MarketPrice = cumsum(MarketRet);
+MarketPrice = fints(rfts.dates,MarketPrice,'JSE',rfts.freq,'Index');
+
+%% find the 4 accumlated return bins
+PriceIndex = ret2tick(rfts);
+nt=ntile(fts2mat(PriceIndex)',3)';
+ntc = {'red','yellow','green'};
+
+%% find the 4 accumlated return bins
+nt = m;
+nt(m>0) = 3;
+nt(m<=0) = 1;
+ntc = {'red','yellow','green'};
+
+%% Process the correlation matrices
+clear Dmov;
+aviobj = avifile('MST.avi','FPS',1);
+scrsz = get(0,'ScreenSize');
+fig=figure('Position',scrsz);
+% axes1 = axes(fig,'Position',[0.13 0.688 0.775 0.237]);
+for ti=1:size(s,3),
+    r0 = squeeze(s(:,:,ti));
+    % remove nan correlations
+    r0(isnan(r0)) = 0;
+    % cleaned covariance matrix
+    Q = size(x,1)/size(x,2); % quality ratio N-dates, M-securities
+    r0 = cov2clean(r0,Q);
+    % make the correlation matrix positive semi-definite
+    r0 = posdef(r0);
+    % correlation matrix to distance measure
+    d0 = 1 - r0; % correlation distance matrix
+    [m,n]=size(d0);
+    for i=1:n-1,
+        for j=i+1:n,
+            d((i-1)*(m-i/2)+j-i) = d0(i,j);
+        end
+    end
+    % create the linkage vector
+    z0 = linkage(d);
+    % find the minimal spanning tree
+    a0 = adjacency(d);
+    % find the minimal spanning tree using kruskal algo
+    [mst,nmst,t]=minspantree(a0);
+    % find the coordinates
+    [xy] = mstcoords(t);
+    % create the date line
+    subplot(4,1,1);
+    h=plot(MarketPrice);
+    h1=line(MarketPrice.dates(ti) * ones(1,2),get(gca,'YLim'),'Color','b','LineWidth',2);
+    % create the spanning tree plot
+    subplot(4,1,[2 3 4]);
+    % plot
+    mstplot(t,xy,[],tickers0,true,nt(ti,:),{'r','b','g'})
+    set(gca,'Ylim',[-5 5],'Xlim',[-5 14]);
+    daspect([1 1 1]);
+    % title
+    title(sprintf('Tree on %s',datestr(today-size(s,3)+ti)));
+    Dmov(ti) = getframe(fig);
+    F = getframe(fig);
+    aviobj = addframe(aviobj,F);
+end
+close(fig)
+aviobj = close(aviobj);
+
+##### SOURCE END #####
+-->
+   </body>
+</html>
