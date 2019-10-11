@@ -1,0 +1,619 @@
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>besa_intro</title>
+      <meta name="generator" content="MATLAB 7.2">
+      <meta name="date" content="2006-03-30">
+      <meta name="m-file" content="besa_intro"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows.  On Gecko-based browsers, the shrink-to-fit doesn't work. */ 
+p,h1,h2,div.content div {
+  /* for MATLAB's browser */
+  width: 600px;
+  /* for Mozilla, but the "width" tag overrides it anyway */
+  max-width: 600px;
+  /* for IE */
+  width:expression(document.body.clientWidth > 620 ? "600px": "auto" );
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">BESA CONVENTION FIXED INCOME PRICING FOR RISK MANAGEMENT</a></li>
+               <li><a href="#2">Bond Pricing Functionality</a></li>
+               <li><a href="#3">R150 government bond</a></li>
+               <li><a href="#4">Bond Option Pricing Functionality</a></li>
+               <li><a href="#5">[1] Value of option on its last day R153</a></li>
+               <li><a href="#6">[2] Long option at the foward money R150</a></li>
+               <li><a href="#7">[3] The Call hits intrinsic R157</a></li>
+               <li><a href="#8">Inflation Linked Bond Instrument Pricing</a></li>
+               <li><a href="#9">R189 Inflation Linked Bond</a></li>
+            </ul>
+         </div>
+         <h2>BESA CONVENTION FIXED INCOME PRICING FOR RISK MANAGEMENT<a name="1"></a></h2>
+         <p>Authors: Tim Gebbie, Grant Grobbelaar Copyright 2006 Tim Gebbie, Futuregrowth Asset Management and                OPTI-NUM
+            solutions (Pty) Ltd
+         </p><pre class="codeinput">clear <span class="string">detail</span>;
+help <span class="string">besa</span>
+</pre><pre class="codeoutput">  South African Fixed Income Toolbox 
+  Version 1.0 (R2006a) 03-Feb-2006 
+ 
+  Authors: Tim Gebbie, Grant Grobbelaar
+  Copyright 2006 Tim Gebbie, Futuregrowth Asset Management and
+                 OPTI-NUM solutions (Pty) Ltd
+  
+     This program is free software; you can redistribute it and/or modify
+     it under the terms of the GNU General Public License as published by
+     the Free Software Foundation; either version 2 of the License, or
+     (at your option) any later version.
+ 
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU General Public License for more details.
+ 
+     You should have received a copy of the GNU General Public License
+     along with this program; if not, write to the Free Software
+     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307
+     USA
+ 
+  NO WARRANTY
+ 
+  General information.
+    This toolbox provides fixed income pricing functions based on the 
+    BESA (Bond Exchange of South Africa) specification documentations:
+ 
+    1. Bond Pricing Formulae, BESA, Quant Financial Research 1997
+    2. Option Pricing for Risk Management, BESA Quant Financial Research 1998 
+    3. Buy/Sell Back(carries) and Forward Pricing, BESA, Quant Financial Research 1997 
+    4. Risk Management Methodology, BESA, Quant Financial Research 1997
+ 
+  General Functions:
+    besaaip      - Allinprice for South African bonds using BESA specification
+    besainfaip   - Allinprice for inflation linked bonds
+    besatenor    - Bond tenor
+    besaconv     - Bond Convexity
+    besamoddur   - Bond Modified Duration
+    besaimpytm   - Implied yield-to-maturity 
+    besafwdprc   - Bond forward price
+    besaoption   - Bond option using Blacks model as per BESA specification
+    ncdproceeds  - NCD proceeds
+    ncdmvalue    - NCD maturity value
+    eqvalue      - Equivalent value of continuous rate
+    settledate   - Settlement date rule
+    valuedate    - Valuation date
+    cpiratio     - Compute the CPI ratio for inflation link bonds
+    cpirefdates  - Compute the reference dates for CPI data
+    holidays     - Holidays and non-trading days in South Africa and the US
+        
+  Test Code
+    besa_gilts_001     - test allinprice computations
+    besa_options_002   - test options pricing 
+ 
+  Test Data
+    None at this time.
+  
+  Obsolete functions.
+    None at this time.
+ 
+  Others
+    None at this time
+ 
+  GUI Utilities.
+    None at this time.
+
+</pre><h2>Bond Pricing Functionality<a name="2"></a></h2>
+         <p>See besa_gilts_test_001</p><pre class="codeinput">help <span class="string">besaaip</span>
+</pre><pre class="codeoutput"> BESAAIP(DATE,YTM,DETAILS) BESA All-in-price for Gilts
+    [AIP,CP,CUM] = BESAAIP(SETTLE,YTM,DETAILS) South African bond price for
+    six-month or longer maturities. The settlement date SETTLE is typically 
+    used. The current yield-to-maturity YTM are required with the structure 
+    specifying the bond details DETAILS. The valuation date is typically 
+    T-1 with respect to the settlement date. Cum interest if the settlement 
+    is more than a month before next interest payment, ex interest if it is 
+    a month or less before the next interest payment. Trade ex-interest for 
+    one month, with interest not accruing up to the coupon date. The return 
+    given is that to par.
+ 
+    AIP = All-in-price
+    CP  = [cleanprice interest flatyield returns]
+    CUM = [cum_flag Coupon Last_Payment_Date]
+    
+    Example 1: R150
+       Maturity  = '28-Feb-2005';
+       Valuation = '30-Jun-1999';
+       Lastpay   = '28-Feb-1999';
+       Nextpay   = '31-Aug-1999';
+       Coupon    = 0.12; 
+ 
+    detail.code     = 'R150';
+    detail.coupon   = 0.12;
+    detail.maturity = datenum('28-Feb-2005');
+    detail.ldr1     = datenum('31-Jan-1991');
+    detail.ldr2     = datenum('31-Jul-1991');
+    detail.pay1     = datenum('28-Feb-1991');
+    detail.pay2     = datenum('31-Aug-1991');
+    detail.onebeforelast = datenum('31-Aug-2004');
+    [aip,cp,cum] =  besaaip(datenum('30-Jun-1999'),0.1455,detail)
+ 
+    This is an all-in-price = R94.31%, a Clean price of R90.30% with  
+    cum interest as R4.01%. 
+ 
+    Note: Requires HOLIDAYS to provide the correct holidays for South Africa.
+ 
+    See Also: HOLIDAYS, BUSDATE, SETTLEDATE, VALUEDATE, BESAMODDUR, BESACONV
+
+</pre><h2>R150 government bond<a name="3"></a></h2><pre class="codeinput">detail.code{1}     = <span class="string">'R150'</span>;
+detail.coupon(1)   = 0.12;
+detail.maturity(1) = datenum(<span class="string">'28-Feb-2005'</span>);
+detail.ldr1(1)     = datenum(<span class="string">'31-Jan-1991'</span>);
+detail.ldr2(1)     = datenum(<span class="string">'31-Jul-1991'</span>);
+detail.pay1(1)     = datenum(<span class="string">'28-Feb-1991'</span>);
+detail.pay2(1)     = datenum(<span class="string">'31-Aug-1991'</span>);
+detail.onebeforelast(1) = datenum(<span class="string">'31-Aug-2004'</span>);
+<span class="comment">% price at YTM of 0.1455 on '30-Jun-1999'</span>
+settle_date = datenum(<span class="string">'30-Jun-1999'</span>);
+value_date = datenum(valuedate(settle_date,3));
+[aip, cp, cum] = besaaip(settle_date,0.1455,detail)
+<span class="comment">%      all-in price = R94.31%,</span>
+<span class="comment">%      cleanprice   = R90.30%,</span>
+<span class="comment">%      cum-interest = R4.01%</span>
+<span class="comment">%</span>
+<span class="comment">% Modifed Durations</span>
+md = besamoddur(settle_date,0.1455,detail)
+<span class="comment">% Convexity</span>
+conv = besaconv(settle_date,0.1455,detail)
+<span class="comment">% Tenor</span>
+tenor = besatenor(value_date,detail)
+</pre><pre class="codeoutput">aip =
+   94.3105
+cp =
+   90.2996    4.0110   13.2891   -5.6895
+cum =
+  1.0e+005 *
+    0.0000    0.0000    7.3018
+md =
+    3.7455
+conv =
+   19.2483
+tenor =
+    5.6795
+</pre><h2>Bond Option Pricing Functionality<a name="4"></a></h2>
+         <p>See besa_options_test_002</p><pre class="codeinput">help <span class="string">besaoption</span>
+</pre><pre class="codeoutput"> BESAOPTION Use Black's model to price BESA option 
+    [PR] = BESAOPTION(SPOT,STRIKE,EXPIRY,VOL,RATE,VALUE,T,DETAILS) BESA Valuation of 
+    options on bonds. Uses Black's model in conjunction with the forward 
+    clean price for the bond; this compensate for pull-to-par. Assumes that 
+    the clean price of a bond is lognormally distributed. All PV's use 
+    compound interest.  The American options are dealt with using the 
+    "American Intrinsic Correction", i.e. the option is valued as if it were
+    european and the result adjusted if necessary so that it is not less than 
+    the option intrinsic value -- this tends to undervalue
+    at-or-near-the-money. 
+ 
+    Input:
+        CODE  : bond code
+        SPOT  : spot ytm of bond
+        STRIKE: strike ytm of option
+        EXPIRY: expiry date of option
+        VOL   : the clean price volatility
+        RATE  : current risk free rate (NOT CONTINUOUS)
+        VALUE : Valuation date
+        T : Difference between settlement and valuation
+        DETAIL: The bond details as a structure
+ 
+    Output:
+        PR = [EC EP IVC IVP AC AP]
+            EC    = European Call
+            EP    =  European Put 
+            IVC   = Intrinsic Value Call
+            IVP   = IntrinsicValue Put
+            AC    = American Call
+            AP    = American Put
+ 
+    Canonical examples:
+    [1] Value of option on its last day R153
+    besaoption(0.135,0.135,datenum('17-Feb-1998 16:00:00'),0.10,0.145, ...
+        datenum('17-Feb-1998 10:00:00'),3,details)
+ 
+    [2] Long option at the foward money R150
+    detail.code     = 'R150';
+    detail.coupon   = 0.12;
+    detail.maturity = datenum('28-Feb-2005');
+    detail.ldr1     = datenum('31-Jan-1991');
+    detail.ldr2     = datenum('31-Jul-1991');
+    detail.pay1     = datenum('28-Feb-1991');
+    detail.pay2     = datenum('31-Aug-1991');
+    detail.onebeforelast = datenum('31-Aug-2004');
+    besaoption(0.135,0.1371566,datenum('17-Feb-2000 16:00:00'),0.10,0.145, ...
+        datenum('17-Feb-1998 16:00:00'),3,detail)
+ 
+    [3] The Call hits intrinsic R157
+    besaoption(0.135,0.1500,datenum('5-Nov-1998 16:00:00'),0.09,0.145, ...
+         datenum('17-Feb-1998 16:00:00'),3,details)
+ 
+    Multiply by 10 000 for per R1M value.
+ 
+    See Also: BESAFWDPRC, EQVALUE, BESAAIP, SETTLEDATE
+
+</pre><h2>[1] Value of option on its last day R153<a name="5"></a></h2>
+         <div>
+            <ul>
+               <li>R153</li>
+            </ul>
+         </div><pre class="codeinput">detail1.code     = <span class="string">'R153'</span>;
+detail1.coupon   =  0.13;
+detail1.maturity = datenum(<span class="string">'31-Aug-2010'</span>);
+detail1.ldr1 = datenum(<span class="string">'31-Jan-1991'</span>);
+detail1.ldr2 = datenum(<span class="string">'31-Jul-1991'</span>);
+detail1.pay1 = datenum(<span class="string">'28-Feb-1991'</span>);
+detail1.pay2 = datenum(<span class="string">'31-Aug-1991'</span>);
+detail1.onebeforelast = datenum(<span class="string">'28-Feb-2010'</span>);
+<span class="comment">% Output:</span>
+<span class="comment">%  European Call        = 0.10118191629472</span>
+<span class="comment">%  European Put         = 0.10118191629471</span>
+<span class="comment">%  Intrinsic Value Call = 0</span>
+<span class="comment">%  Intrinsic Value Put  = 0</span>
+<span class="comment">%  American Call        = 0.10118191629472</span>
+<span class="comment">%  American Put         = 0.10118191629471</span>
+<span class="comment">%</span>
+<span class="comment">%  premium = price ./ 100</span>
+<span class="comment">%</span>
+premium = besaoption(0.135,0.135,datenum(<span class="string">'17-Feb-1998 16:00:00'</span>),0.10,0.145, <span class="keyword">...</span>
+    datenum(<span class="string">'17-Feb-1998 10:00:00'</span>),3,detail1)
+</pre><pre class="codeoutput">premium =
+    0.1012    0.1012         0         0    0.1012    0.1012
+</pre><h2>[2] Long option at the foward money R150<a name="6"></a></h2>
+         <div>
+            <ul>
+               <li>R150</li>
+            </ul>
+         </div><pre class="codeinput">detail2.code     = <span class="string">'R150'</span>;
+detail2.coupon   = 0.12;
+detail2.maturity = datenum(<span class="string">'28-Feb-2005'</span>);
+detail2.ldr1     = datenum(<span class="string">'31-Jan-1991'</span>);
+detail2.ldr2     = datenum(<span class="string">'31-Jul-1991'</span>);
+detail2.pay1     = datenum(<span class="string">'28-Feb-1991'</span>);
+detail2.pay2     = datenum(<span class="string">'31-Aug-1991'</span>);
+detail2.onebeforelast = datenum(<span class="string">'31-Aug-2004'</span>);
+<span class="comment">% Output:</span>
+<span class="comment">%</span>
+<span class="comment">%  European Call        = 4.09769694262107</span>
+<span class="comment">%  European Put         = 4.09768645909906</span>
+<span class="comment">%  Intrinsic Value Call = 0.90846911765971</span>
+<span class="comment">%  Intrinsic Value Put  = 0</span>
+<span class="comment">%  American Call        = 4.09769694262107</span>
+<span class="comment">%  American Put         = 4.09768645909906</span>
+<span class="comment">%</span>
+<span class="comment">%  premium = price ./ 100</span>
+<span class="comment">%</span>
+premium = besaoption(0.135,0.1371566,datenum(<span class="string">'17-Feb-2000 16:00:00'</span>),0.10,0.145, <span class="keyword">...</span>
+    datenum(<span class="string">'17-Feb-1998 16:00:00'</span>),3,detail2)
+</pre><pre class="codeoutput">premium =
+    4.0977    4.0977    0.9085         0    4.0977    4.0977
+</pre><h2>[3] The Call hits intrinsic R157<a name="7"></a></h2>
+         <div>
+            <ul>
+               <li>R157</li>
+            </ul>
+         </div><pre class="codeinput">detail3.code     = <span class="string">'R157'</span>;
+detail3.coupon   = 0.135;
+detail3.maturity = datenum(<span class="string">'15-Sep-2015'</span>);
+detail3.ldr1     = datenum(<span class="string">'15-Feb-1991'</span>);
+detail3.ldr2     = datenum(<span class="string">'15-Aug-1991'</span>);
+detail3.pay1     = datenum(<span class="string">'15-Mar-1991'</span>);
+detail3.pay2    = datenum(<span class="string">'15-Sep-1991'</span>);
+detail3.onebeforelast = datenum(<span class="string">'15-Mar-2015'</span>);
+<span class="comment">% Output:</span>
+<span class="comment">%</span>
+<span class="comment">%  European Call        = 9.07575948404277</span>
+<span class="comment">%  European Put         = 0.27659855572086</span>
+<span class="comment">%  Intrinsic Value Call = 9.19794779773544</span>
+<span class="comment">%  Intrinsic Value Put  = 0</span>
+<span class="comment">%  American Call        = 9.19794779773544</span>
+<span class="comment">%  American Put         = 0.27659855572086</span>
+<span class="comment">%</span>
+<span class="comment">%  premium = price ./ 100</span>
+<span class="comment">%</span>
+premium = besaoption(0.135,0.1500,datenum(<span class="string">'5-Nov-1998 16:00:00'</span>),0.09,0.145,<span class="keyword">...</span>
+    datenum(<span class="string">'17-Feb-1998 16:00:00'</span>),3,detail3)
+</pre><pre class="codeoutput">premium =
+    9.0758    0.2766    9.1979         0    9.1979    0.2766
+</pre><h2>Inflation Linked Bond Instrument Pricing<a name="8"></a></h2><pre class="codeinput">help <span class="string">besainfaip</span>
+</pre><pre class="codeoutput"> BESAINFAIP All-in-price for Inflation linked BESA Gilts
+    [AIP] = BESAINFAIP(SETTLE,RYTM,RATIO,DETAILS) Find the allinprice 
+    for an inflation linked bond given the CPI ratio, RATIO, The valuation
+    and settlement dates, VALUE and SETTLE, the real yield to maturity RYTM.
+ 
+    [AIP] = BESAINFAIP(SETTLE,RYTM,RATIO,DETAILS,ECPI,CPI_ISSUE) Find 
+    the allinprice for an inflation linked bond given the CPI at issue, the 
+    CPI at valuation and the real yield to maturity. ECPI is the expected 
+    y/y CPI rate as an annualized percentage this is not necessary as an 
+    input unless one does not want to use the current CPI at valuation.
+ 
+    [AIP,RP,BI] = BESAINFAIP(SETTLE,RYTM,RATIO,CPI_ISSUE,DETAILS,YTM0) 
+    If the nearest current YTM0 at the current tenor of the relevent instrument
+    is provided. Then the break-even inflation rate is given as BI and 
+    the risk premium RP can be computed.
+  
+    AIP(t) = BESAAIP(RY(t)) * (CPI(t)/CPI(0))
+ 
+    1. I     : Expected Inflation 
+    2. Y     : Nominal yield at tenor (conventional yield off yield curve)
+    3. RYTM  : Real Yield (for inflation linked bond)
+    4. BI    : Break Even inflation rate
+                       (1+Y)
+                BI =  -------- - 1
+                      (1+RYTM)
+    5. RP   : Risk Premium
+                         (1+Y)     
+                RP =  ---------------  - 1
+                      (1+RYTM)*(1+I)) 
+ 
+    Example 1.:
+ 
+    See Also: BESAAIP
+
+</pre><h2>R189 Inflation Linked Bond<a name="9"></a></h2>
+         <p>Price R189 for settlement on the 10-October-2005 with a real yield of 2.7%</p>
+         <p>AIP R124.04813% (at 2.7%) INF AIP R165.58012% Clean Price R165.35156% Acc Inte = R0.22856% Delta = -10.1930 Modified Duration
+            = 6.156 Duration = 6.239 Convexity = 45.347
+         </p>
+         <p>Reference CPI on Issue date    95.6838709677419 Reference CPI on Settle date  127.71935483871 ratio                      
+                1.33480547501854
+         </p><pre class="codeinput">cpidetail.code      = <span class="string">'R189'</span>;
+cpidetail.maturity  = datenum(<span class="string">'31-March-2013'</span>);
+cpidetail.ldr1      = datenum(<span class="string">'21-March-1999'</span>);
+cpidetail.ldr2      = datenum(<span class="string">'20-Sep-1999'</span>);
+cpidetail.pay1      = datenum(<span class="string">'31-Mar-1999'</span>);
+cpidetail.pay2      = datenum(<span class="string">'30-Sep-1999'</span>);
+cpidetail.issuedate = datenum(<span class="string">'20-Mar-2000'</span>);
+cpidetail.onebeforelast = datenum(<span class="string">'30-Sep-2012'</span>);
+cpidetail.coupon    = 0.0625;
+<span class="comment">% CPI data</span>
+cpi = [95.5; 95.8; 127.6; 127.4; 128.5];
+cpi_dates = datenum({<span class="string">'30-Nov-1999'</span>;<span class="string">'31-Dec-1999'</span>;<span class="string">'31-May-2005'</span>;<span class="string">'30-Jun-2005'</span>;<span class="string">'31-Jul-2005'</span>});
+rytm = 0.027;
+ytm0 = 0.08;
+settle_date = datenum(<span class="string">'10-Oct-2005'</span>);
+value_date = datenum(valuedate(settle_date,3));
+<span class="comment">% Compute the ECPI ratio</span>
+[cpi_ratio,cpi_issue,cpi_settle]=cpiratio(settle_date,cpidetail.issuedate,cpi,cpi_dates)
+<span class="comment">% pricing example</span>
+aip = besaaip(settle_date,rytm,cpidetail)
+infaip = besainfaip(settle_date,rytm,cpi_ratio,cpidetail)
+</pre><pre class="codeoutput">cpi_ratio =
+    1.3348
+cpi_issue =
+   95.6839
+cpi_settle =
+  127.7194
+aip =
+  124.0481
+infaip =
+  165.5801
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.2<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% BESA CONVENTION FIXED INCOME PRICING FOR RISK MANAGEMENT 
+%
+% Authors: Tim Gebbie, Grant Grobbelaar
+% Copyright 2006 Tim Gebbie, Futuregrowth Asset Management and
+%                OPTI-NUM solutions (Pty) Ltd
+clear detail;
+help besa
+
+%% Bond Pricing Functionality
+%
+% See besa_gilts_test_001
+help besaaip
+
+%% R150 government bond
+detail.code{1}     = 'R150';
+detail.coupon(1)   = 0.12;
+detail.maturity(1) = datenum('28-Feb-2005');
+detail.ldr1(1)     = datenum('31-Jan-1991');
+detail.ldr2(1)     = datenum('31-Jul-1991');
+detail.pay1(1)     = datenum('28-Feb-1991');
+detail.pay2(1)     = datenum('31-Aug-1991');
+detail.onebeforelast(1) = datenum('31-Aug-2004');
+% price at YTM of 0.1455 on '30-Jun-1999'
+settle_date = datenum('30-Jun-1999');
+value_date = datenum(valuedate(settle_date,3));
+[aip, cp, cum] = besaaip(settle_date,0.1455,detail)
+%      all-in price = R94.31%,         
+%      cleanprice   = R90.30%,  
+%      cum-interest = R4.01%
+%
+% Modifed Durations
+md = besamoddur(settle_date,0.1455,detail)
+% Convexity
+conv = besaconv(settle_date,0.1455,detail)
+% Tenor
+tenor = besatenor(value_date,detail)
+
+%% Bond Option Pricing Functionality
+%
+% See besa_options_test_002
+help besaoption
+
+%% [1] Value of option on its last day R153
+%
+% * R153
+%
+detail1.code     = 'R153';
+detail1.coupon   =  0.13;
+detail1.maturity = datenum('31-Aug-2010');
+detail1.ldr1 = datenum('31-Jan-1991');
+detail1.ldr2 = datenum('31-Jul-1991');
+detail1.pay1 = datenum('28-Feb-1991');
+detail1.pay2 = datenum('31-Aug-1991');
+detail1.onebeforelast = datenum('28-Feb-2010');
+% Output:
+%  European Call        = 0.10118191629472
+%  European Put         = 0.10118191629471  
+%  Intrinsic Value Call = 0
+%  Intrinsic Value Put  = 0
+%  American Call        = 0.10118191629472
+%  American Put         = 0.10118191629471
+%
+%  premium = price ./ 100
+%
+premium = besaoption(0.135,0.135,datenum('17-Feb-1998 16:00:00'),0.10,0.145, ...
+    datenum('17-Feb-1998 10:00:00'),3,detail1)
+
+%% [2] Long option at the foward money R150
+%
+% * R150 
+%
+detail2.code     = 'R150';
+detail2.coupon   = 0.12;
+detail2.maturity = datenum('28-Feb-2005');
+detail2.ldr1     = datenum('31-Jan-1991');
+detail2.ldr2     = datenum('31-Jul-1991');
+detail2.pay1     = datenum('28-Feb-1991');
+detail2.pay2     = datenum('31-Aug-1991');
+detail2.onebeforelast = datenum('31-Aug-2004');
+% Output:
+%
+%  European Call        = 4.09769694262107
+%  European Put         = 4.09768645909906   
+%  Intrinsic Value Call = 0.90846911765971
+%  Intrinsic Value Put  = 0
+%  American Call        = 4.09769694262107
+%  American Put         = 4.09768645909906
+%
+%  premium = price ./ 100
+%
+premium = besaoption(0.135,0.1371566,datenum('17-Feb-2000 16:00:00'),0.10,0.145, ...
+    datenum('17-Feb-1998 16:00:00'),3,detail2)  
+
+%% [3] The Call hits intrinsic R157
+%
+% * R157
+%
+detail3.code     = 'R157';
+detail3.coupon   = 0.135;
+detail3.maturity = datenum('15-Sep-2015');
+detail3.ldr1     = datenum('15-Feb-1991');
+detail3.ldr2     = datenum('15-Aug-1991');
+detail3.pay1     = datenum('15-Mar-1991');
+detail3.pay2    = datenum('15-Sep-1991');
+detail3.onebeforelast = datenum('15-Mar-2015'); 
+% Output:
+%
+%  European Call        = 9.07575948404277
+%  European Put         = 0.27659855572086   
+%  Intrinsic Value Call = 9.19794779773544
+%  Intrinsic Value Put  = 0 
+%  American Call        = 9.19794779773544
+%  American Put         = 0.27659855572086
+%
+%  premium = price ./ 100
+%
+premium = besaoption(0.135,0.1500,datenum('5-Nov-1998 16:00:00'),0.09,0.145,...
+    datenum('17-Feb-1998 16:00:00'),3,detail3)
+
+%% Inflation Linked Bond Instrument Pricing
+help besainfaip
+
+%% R189 Inflation Linked Bond
+% Price R189 for settlement on the 10-October-2005 with 
+% a real yield of 2.7%
+%
+% AIP R124.04813% (at 2.7%)
+% INF AIP R165.58012%
+% Clean Price R165.35156% Acc Inte = R0.22856%
+% Delta = -10.1930
+% Modified Duration = 6.156
+% Duration = 6.239
+% Convexity = 45.347
+%
+% Reference CPI on Issue date    95.6838709677419
+% Reference CPI on Settle date  127.71935483871
+% ratio                           1.33480547501854
+%
+cpidetail.code      = 'R189';
+cpidetail.maturity  = datenum('31-March-2013');
+cpidetail.ldr1      = datenum('21-March-1999');
+cpidetail.ldr2      = datenum('20-Sep-1999');
+cpidetail.pay1      = datenum('31-Mar-1999');
+cpidetail.pay2      = datenum('30-Sep-1999');
+cpidetail.issuedate = datenum('20-Mar-2000'); 
+cpidetail.onebeforelast = datenum('30-Sep-2012');
+cpidetail.coupon    = 0.0625;
+% CPI data  
+cpi = [95.5; 95.8; 127.6; 127.4; 128.5];
+cpi_dates = datenum({'30-Nov-1999';'31-Dec-1999';'31-May-2005';'30-Jun-2005';'31-Jul-2005'});
+rytm = 0.027;
+ytm0 = 0.08;
+settle_date = datenum('10-Oct-2005');
+value_date = datenum(valuedate(settle_date,3));
+% Compute the ECPI ratio
+[cpi_ratio,cpi_issue,cpi_settle]=cpiratio(settle_date,cpidetail.issuedate,cpi,cpi_dates)
+% pricing example
+aip = besaaip(settle_date,rytm,cpidetail)
+infaip = besainfaip(settle_date,rytm,cpi_ratio,cpidetail)
+
+
+##### SOURCE END #####
+-->
+   </body>
+</html>
