@@ -1,0 +1,350 @@
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>besa_gilts_test_001</title>
+      <meta name="generator" content="MATLAB 7.2">
+      <meta name="date" content="2006-03-30">
+      <meta name="m-file" content="besa_gilts_test_001"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows.  On Gecko-based browsers, the shrink-to-fit doesn't work. */ 
+p,h1,h2,div.content div {
+  /* for MATLAB's browser */
+  width: 600px;
+  /* for Mozilla, but the "width" tag overrides it anyway */
+  max-width: 600px;
+  /* for IE */
+  width:expression(document.body.clientWidth > 620 ? "600px": "auto" );
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">BESA GILTS PRICING TEST FILE</a></li>
+               <li><a href="#2">R150</a></li>
+               <li><a href="#3">R157</a></li>
+               <li><a href="#4">R153</a></li>
+               <li><a href="#5">Vectorized All-in-price</a></li>
+               <li><a href="#6">Inflation Linked Bond</a></li>
+               <li><a href="#7">Inflation Linked Bond with ECPI y/y forecast</a></li>
+            </ul>
+         </div>
+         <h2>BESA GILTS PRICING TEST FILE<a name="1"></a></h2><pre>  The test cases are taken from the following documenentation:</pre><pre>  1. Bond Pricing Formulae, BESA, Quant Financial Research 1997
+  2. Option Pricing for Risk Management, BESA Quant Financial Research 1998
+  3. Buy/Sell Back(carries) and Forward Pricing, BESA, Quant Financial Research 1997
+  4. Risk Management Methodology, BESA, Quant Financial Research 1997</pre><pre class="codeinput">clear <span class="string">detail</span>
+</pre><h2>R150<a name="2"></a></h2><pre class="codeinput">detail.code{1}     = <span class="string">'R150'</span>;
+detail.coupon(1)   = 0.12;
+detail.maturity(1) = datenum(<span class="string">'28-Feb-2005'</span>);
+detail.ldr1(1)     = datenum(<span class="string">'31-Jan-1991'</span>);
+detail.ldr2(1)     = datenum(<span class="string">'31-Jul-1991'</span>);
+detail.pay1(1)     = datenum(<span class="string">'28-Feb-1991'</span>);
+detail.pay2(1)     = datenum(<span class="string">'31-Aug-1991'</span>);
+detail.onebeforelast(1) = datenum(<span class="string">'31-Aug-2004'</span>);
+<span class="comment">% price at YTM of 0.1455 on '30-Jun-1999'</span>
+settle_date = datenum(<span class="string">'30-Jun-1999'</span>);
+value_date = datenum(valuedate(settle_date,3));
+[aip, cp, cum] = besaaip(settle_date,0.1455,detail)
+<span class="comment">%      all-in price = R94.31%,</span>
+<span class="comment">%      cleanprice   = R90.30%,</span>
+<span class="comment">%      cum-interest = R4.01%</span>
+<span class="comment">%</span>
+<span class="comment">% Modifed Durations</span>
+md = besamoddur(settle_date,0.1455,detail)
+<span class="comment">% Convexity</span>
+conv = besaconv(settle_date,0.1455,detail)
+<span class="comment">% Tenor</span>
+tenor = besatenor(value_date,detail)
+</pre><pre class="codeoutput">aip =
+   94.3105
+cp =
+   90.2996    4.0110   13.2891   -5.6895
+cum =
+  1.0e+005 *
+    0.0000    0.0000    7.3018
+md =
+    3.7455
+conv =
+   19.2483
+tenor =
+    5.6795
+</pre><h2>R157<a name="3"></a></h2><pre class="codeinput">detail.code{2,1}    = <span class="string">'R157'</span>;
+detail.coupon(2,1)   = 0.135;
+detail.maturity(2,1) = datenum(<span class="string">'15-Sep-2015'</span>);
+detail.ldr1(2,1)     = datenum(<span class="string">'15-Feb-1991'</span>);
+detail.ldr2(2,1)     = datenum(<span class="string">'15-Aug-1991'</span>);
+detail.pay1(2,1)     = datenum(<span class="string">'15-Mar-1991'</span>);
+detail.pay2(2,1)    = datenum(<span class="string">'15-Sep-1991'</span>);
+detail.onebeforelast(2,1) = datenum(<span class="string">'15-Mar-2015'</span>);
+</pre><h2>R153<a name="4"></a></h2><pre class="codeinput">detail.code{3}     = <span class="string">'R153'</span>;
+detail.coupon(3)   =  0.13;
+detail.maturity(3) = datenum(<span class="string">'31-Aug-2010'</span>);
+detail.ldr1(3) = datenum(<span class="string">'31-Jan-1991'</span>);
+detail.ldr2(3) = datenum(<span class="string">'31-Jul-1991'</span>);
+detail.pay1(3) = datenum(<span class="string">'28-Feb-1991'</span>);
+detail.pay2(3) = datenum(<span class="string">'31-Aug-1991'</span>);
+detail.onebeforelast(3) = datenum(<span class="string">'28-Feb-2010'</span>);
+</pre><h2>Vectorized All-in-price<a name="5"></a></h2>
+         <p>YTM's on 30-Jun-1999 for R150, R157 and R153    desc:  TOMONTHLY: Close_Price    freq:  Monthly (3)</p><pre>  'dates:  (1)'    'R150:  (1)'    'R153:  (1)'    'R157:  (1)'
+  '30-Jun-1999'    [   14.5500]    [   15.2000]    [   15.1800]</pre><pre class="codeinput">format <span class="string">long</span>
+ytm = [0.1455; 0.152; 0.1518];
+settle_date = datenum(<span class="string">'30-Jun-1999'</span>)*ones(size(ytm));
+value_date = datenum(valuedate(settle_date,3));
+<span class="comment">% The allinprice</span>
+[aip, cp, cum] = besaaip(settle_date,ytm,detail)
+</pre><pre class="codeoutput">aip =
+  94.31051461274338
+  93.72142446449335
+  92.69764169333863
+cp =
+  90.29955570863379   4.01095890410959  13.28910192949338  -5.68948538725662
+  89.76389021791800   3.95753424657534  15.03945513861567  -6.27857553550665
+  88.35243621388656   4.34520547945205  14.71379914021744  -7.30235830666138
+cum =
+  1.0e+005 *
+   0.00001000000000   0.00000120000000   7.30179000000000
+   0.00001000000000   0.00000135000000   7.30194000000000
+   0.00001000000000   0.00000130000000   7.30179000000000
+</pre><h2>Inflation Linked Bond<a name="6"></a></h2>
+         <p>Price R189 for settlement on the 10-October-2005 with a real yield of 2.7%</p>
+         <p>AIP R124.04813% (at 2.7%) INF AIP R165.58012% Clean Price R165.35156% Acc Inte = R0.22856% Delta = -10.1930 Modified Duration
+            = 6.156 Duration = 6.239 Convexity = 45.347
+         </p>
+         <p>Reference CPI on Issue date    95.6838709677419 Reference CPI on Settle date  127.71935483871 ratio                      
+                1.33480547501854
+         </p><pre class="codeinput">cpidetail.code      = <span class="string">'R189'</span>;
+cpidetail.maturity  = datenum(<span class="string">'31-March-2013'</span>);
+cpidetail.ldr1      = datenum(<span class="string">'21-March-1999'</span>);
+cpidetail.ldr2      = datenum(<span class="string">'20-Sep-1999'</span>);
+cpidetail.pay1      = datenum(<span class="string">'31-Mar-1999'</span>);
+cpidetail.pay2      = datenum(<span class="string">'30-Sep-1999'</span>);
+cpidetail.issuedate = datenum(<span class="string">'20-Mar-2000'</span>);
+cpidetail.onebeforelast = datenum(<span class="string">'30-Sep-2012'</span>);
+cpidetail.coupon    = 0.0625;
+<span class="comment">% CPI data</span>
+cpi = [95.5; 95.8; 127.6; 127.4; 128.5];
+cpi_dates = datenum({<span class="string">'30-Nov-1999'</span>;<span class="string">'31-Dec-1999'</span>;<span class="string">'31-May-2005'</span>;<span class="string">'30-Jun-2005'</span>;<span class="string">'31-Jul-2005'</span>});
+rytm = 0.027;
+ytm0 = 0.08;
+settle_date = datenum(<span class="string">'10-Oct-2005'</span>);
+value_date = datenum(valuedate(settle_date,3));
+<span class="comment">% Compute the ECPI ratio</span>
+[cpi_ratio,cpi_issue,cpi_settle]=cpiratio(settle_date,cpidetail.issuedate,cpi,cpi_dates)
+<span class="comment">% pricing example</span>
+aip = besaaip(settle_date,rytm,cpidetail)
+infaip = besainfaip(settle_date,rytm,cpi_ratio,cpidetail)
+format <span class="string">short</span>
+[infaip, riskpremium, breakeven_inflation] = besainfaip(settle_date,rytm,cpi_ratio,cpidetail,ytm0)
+</pre><pre class="codeoutput">cpi_ratio =
+   1.33480547501854
+cpi_issue =
+  95.68387096774194
+cpi_settle =
+    1.277193548387097e+002
+aip =
+    1.240481326303094e+002
+infaip =
+    1.655801266007633e+002
+infaip =
+  165.5801
+riskpremium =
+ -8.9369e-004
+breakeven_inflation =
+    0.0516
+</pre><h2>Inflation Linked Bond with ECPI y/y forecast<a name="7"></a></h2>
+         <p>User supplies new ECPI (forecast) - use the input annualize inflation rate to find cpi index where ECPI is the y/y CPI rate
+            as an annualized percentage.
+         </p><pre class="codeinput">d = daysdif(cpidetail.issuedate,settle_date);
+<span class="comment">% 6% expected inflation</span>
+ecpi = 0.06;
+cpi_value= ((1+ecpi)^(d/360))*cpi_issue;
+cpi_ratio = cpi_value / cpi_issue;
+infaip = besainfaip(settle_date,rytm,cpi_ratio,cpidetail)
+</pre><pre class="codeoutput">infaip =
+  172.3008
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.2<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% BESA GILTS PRICING TEST FILE
+%
+%    The test cases are taken from the following documenentation:
+% 
+%    1. Bond Pricing Formulae, BESA, Quant Financial Research 1997
+%    2. Option Pricing for Risk Management, BESA Quant Financial Research 1998 
+%    3. Buy/Sell Back(carries) and Forward Pricing, BESA, Quant Financial Research 1997 
+%    4. Risk Management Methodology, BESA, Quant Financial Research 1997
+% 
+
+clear detail
+
+%% R150 
+detail.code{1}     = 'R150';
+detail.coupon(1)   = 0.12;
+detail.maturity(1) = datenum('28-Feb-2005');
+detail.ldr1(1)     = datenum('31-Jan-1991');
+detail.ldr2(1)     = datenum('31-Jul-1991');
+detail.pay1(1)     = datenum('28-Feb-1991');
+detail.pay2(1)     = datenum('31-Aug-1991');
+detail.onebeforelast(1) = datenum('31-Aug-2004');
+% price at YTM of 0.1455 on '30-Jun-1999'
+settle_date = datenum('30-Jun-1999');
+value_date = datenum(valuedate(settle_date,3));
+[aip, cp, cum] = besaaip(settle_date,0.1455,detail)
+%      all-in price = R94.31%,         
+%      cleanprice   = R90.30%,  
+%      cum-interest = R4.01%
+%
+% Modifed Durations
+md = besamoddur(settle_date,0.1455,detail)
+% Convexity
+conv = besaconv(settle_date,0.1455,detail)
+% Tenor
+tenor = besatenor(value_date,detail)
+
+%% R157
+detail.code{2,1}    = 'R157';
+detail.coupon(2,1)   = 0.135;
+detail.maturity(2,1) = datenum('15-Sep-2015');
+detail.ldr1(2,1)     = datenum('15-Feb-1991');
+detail.ldr2(2,1)     = datenum('15-Aug-1991');
+detail.pay1(2,1)     = datenum('15-Mar-1991');
+detail.pay2(2,1)    = datenum('15-Sep-1991');
+detail.onebeforelast(2,1) = datenum('15-Mar-2015');
+    
+%% R153
+detail.code{3}     = 'R153';
+detail.coupon(3)   =  0.13;
+detail.maturity(3) = datenum('31-Aug-2010');
+detail.ldr1(3) = datenum('31-Jan-1991');
+detail.ldr2(3) = datenum('31-Jul-1991');
+detail.pay1(3) = datenum('28-Feb-1991');
+detail.pay2(3) = datenum('31-Aug-1991');
+detail.onebeforelast(3) = datenum('28-Feb-2010');
+
+%% Vectorized All-in-price
+%
+% YTM's on 30-Jun-1999 for R150, R157 and R153
+%    desc:  TOMONTHLY: Close_Price
+%    freq:  Monthly (3)
+%
+%    'dates:  (1)'    'R150:  (1)'    'R153:  (1)'    'R157:  (1)'
+%    '30-Jun-1999'    [   14.5500]    [   15.2000]    [   15.1800]
+%
+format long
+ytm = [0.1455; 0.152; 0.1518];
+settle_date = datenum('30-Jun-1999')*ones(size(ytm));
+value_date = datenum(valuedate(settle_date,3));
+% The allinprice
+[aip, cp, cum] = besaaip(settle_date,ytm,detail)
+
+%% Inflation Linked Bond
+%
+% Price R189 for settlement on the 10-October-2005 with 
+% a real yield of 2.7%
+%
+% AIP R124.04813% (at 2.7%)
+% INF AIP R165.58012%
+% Clean Price R165.35156% Acc Inte = R0.22856%
+% Delta = -10.1930
+% Modified Duration = 6.156
+% Duration = 6.239
+% Convexity = 45.347
+%
+% Reference CPI on Issue date    95.6838709677419
+% Reference CPI on Settle date  127.71935483871
+% ratio                           1.33480547501854
+%
+cpidetail.code      = 'R189';
+cpidetail.maturity  = datenum('31-March-2013');
+cpidetail.ldr1      = datenum('21-March-1999');
+cpidetail.ldr2      = datenum('20-Sep-1999');
+cpidetail.pay1      = datenum('31-Mar-1999');
+cpidetail.pay2      = datenum('30-Sep-1999');
+cpidetail.issuedate = datenum('20-Mar-2000'); 
+cpidetail.onebeforelast = datenum('30-Sep-2012');
+cpidetail.coupon    = 0.0625;
+% CPI data  
+cpi = [95.5; 95.8; 127.6; 127.4; 128.5];
+cpi_dates = datenum({'30-Nov-1999';'31-Dec-1999';'31-May-2005';'30-Jun-2005';'31-Jul-2005'});
+rytm = 0.027;
+ytm0 = 0.08;
+settle_date = datenum('10-Oct-2005');
+value_date = datenum(valuedate(settle_date,3));
+% Compute the ECPI ratio
+[cpi_ratio,cpi_issue,cpi_settle]=cpiratio(settle_date,cpidetail.issuedate,cpi,cpi_dates)
+% pricing example
+aip = besaaip(settle_date,rytm,cpidetail)
+infaip = besainfaip(settle_date,rytm,cpi_ratio,cpidetail)
+format short
+[infaip, riskpremium, breakeven_inflation] = besainfaip(settle_date,rytm,cpi_ratio,cpidetail,ytm0)
+
+%% Inflation Linked Bond with ECPI y/y forecast
+% User supplies new ECPI (forecast) - use the input annualize inflation rate 
+% to find cpi index where ECPI is the y/y CPI rate as an annualized percentage.
+d = daysdif(cpidetail.issuedate,settle_date);
+% 6% expected inflation
+ecpi = 0.06;
+cpi_value= ((1+ecpi)^(d/360))*cpi_issue;
+cpi_ratio = cpi_value / cpi_issue;
+infaip = besainfaip(settle_date,rytm,cpi_ratio,cpidetail)
+
+##### SOURCE END #####
+-->
+   </body>
+</html>

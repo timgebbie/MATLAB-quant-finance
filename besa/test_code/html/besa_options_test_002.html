@@ -1,0 +1,341 @@
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>BESA OPTION PRICING FOR RISK MANAGEMENT TEST FILE</title>
+      <meta name="generator" content="MATLAB 7.2">
+      <meta name="date" content="2006-03-30">
+      <meta name="m-file" content="besa_options_test_002"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows.  On Gecko-based browsers, the shrink-to-fit doesn't work. */ 
+p,h1,h2,div.content div {
+  /* for MATLAB's browser */
+  width: 600px;
+  /* for Mozilla, but the "width" tag overrides it anyway */
+  max-width: 600px;
+  /* for IE */
+  width:expression(document.body.clientWidth > 620 ? "600px": "auto" );
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>BESA OPTION PRICING FOR RISK MANAGEMENT TEST FILE</h1>
+         <introduction><pre>  The test cases are taken from the following documenentation:</pre><pre>  1. Bond Pricing Formulae, BESA, Quant Financial Research 1997
+  2. Option Pricing for Risk Management, BESA Quant Financial Research 1998
+  3. Buy/Sell Back(carries) and Forward Pricing, BESA, Quant Financial Research 1997
+  4. Risk Management Methodology, BESA, Quant Financial Research 1997</pre></introduction>
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">Set up the format</a></li>
+               <li><a href="#2">[1] Value of option on its last day R153</a></li>
+               <li><a href="#3">[2] Long option at the foward money R150</a></li>
+               <li><a href="#4">[3] The Call hits intrinsic R157</a></li>
+               <li><a href="#5">Vectorized Bond Details for pricing examples</a></li>
+            </ul>
+         </div>
+         <h2>Set up the format<a name="1"></a></h2><pre class="codeinput">format <span class="string">long</span>
+</pre><h2>[1] Value of option on its last day R153<a name="2"></a></h2>
+         <div>
+            <ul>
+               <li>R153</li>
+            </ul>
+         </div><pre class="codeinput">detail1.code     = <span class="string">'R153'</span>;
+detail1.coupon   =  0.13;
+detail1.maturity = datenum(<span class="string">'31-Aug-2010'</span>);
+detail1.ldr1 = datenum(<span class="string">'31-Jan-1991'</span>);
+detail1.ldr2 = datenum(<span class="string">'31-Jul-1991'</span>);
+detail1.pay1 = datenum(<span class="string">'28-Feb-1991'</span>);
+detail1.pay2 = datenum(<span class="string">'31-Aug-1991'</span>);
+detail1.onebeforelast = datenum(<span class="string">'28-Feb-2010'</span>);
+<span class="comment">% Output:</span>
+<span class="comment">%  European Call        = 0.10118191629472</span>
+<span class="comment">%  European Put         = 0.10118191629471</span>
+<span class="comment">%  Intrinsic Value Call = 0</span>
+<span class="comment">%  Intrinsic Value Put  = 0</span>
+<span class="comment">%  American Call        = 0.10118191629472</span>
+<span class="comment">%  American Put         = 0.10118191629471</span>
+<span class="comment">%</span>
+<span class="comment">%  premium = price ./ 100</span>
+<span class="comment">%</span>
+premium = besaoption(0.135,0.135,datenum(<span class="string">'17-Feb-1998 16:00:00'</span>), <span class="keyword">...</span>
+    0.10,0.145,datenum(<span class="string">'17-Feb-1998 10:00:00'</span>),3,detail1)
+</pre><pre class="codeoutput">premium =
+  Columns 1 through 5 
+   0.10118191629472   0.10118191629471                  0                  0   0.10118191629472
+  Column 6 
+   0.10118191629471
+</pre><h2>[2] Long option at the foward money R150<a name="3"></a></h2>
+         <div>
+            <ul>
+               <li>R150</li>
+            </ul>
+         </div><pre class="codeinput">detail2.code     = <span class="string">'R150'</span>;
+detail2.coupon   = 0.12;
+detail2.maturity = datenum(<span class="string">'28-Feb-2005'</span>);
+detail2.ldr1     = datenum(<span class="string">'31-Jan-1991'</span>);
+detail2.ldr2     = datenum(<span class="string">'31-Jul-1991'</span>);
+detail2.pay1     = datenum(<span class="string">'28-Feb-1991'</span>);
+detail2.pay2     = datenum(<span class="string">'31-Aug-1991'</span>);
+detail2.onebeforelast = datenum(<span class="string">'31-Aug-2004'</span>);
+<span class="comment">% Output:</span>
+<span class="comment">%</span>
+<span class="comment">%  European Call        = 4.09769694262107</span>
+<span class="comment">%  European Put         = 4.09768645909906</span>
+<span class="comment">%  Intrinsic Value Call = 0.90846911765971</span>
+<span class="comment">%  Intrinsic Value Put  = 0</span>
+<span class="comment">%  American Call        = 4.09769694262107</span>
+<span class="comment">%  American Put         = 4.09768645909906</span>
+<span class="comment">%</span>
+<span class="comment">%  premium = price ./ 100</span>
+<span class="comment">%</span>
+premium = besaoption(0.135,0.1371566,datenum(<span class="string">'17-Feb-2000 16:00:00'</span>), <span class="keyword">...</span>
+    0.10,0.145,datenum(<span class="string">'17-Feb-1998 16:00:00'</span>),3,detail2)
+</pre><pre class="codeoutput">premium =
+  Columns 1 through 5 
+   4.09769694262107   4.09768645909906   0.90846911765971                  0   4.09769694262107
+  Column 6 
+   4.09768645909906
+</pre><h2>[3] The Call hits intrinsic R157<a name="4"></a></h2>
+         <div>
+            <ul>
+               <li>R157</li>
+            </ul>
+         </div><pre class="codeinput">detail3.code     = <span class="string">'R157'</span>;
+detail3.coupon   = 0.135;
+detail3.maturity = datenum(<span class="string">'15-Sep-2015'</span>);
+detail3.ldr1     = datenum(<span class="string">'15-Feb-1991'</span>);
+detail3.ldr2     = datenum(<span class="string">'15-Aug-1991'</span>);
+detail3.pay1     = datenum(<span class="string">'15-Mar-1991'</span>);
+detail3.pay2    = datenum(<span class="string">'15-Sep-1991'</span>);
+detail3.onebeforelast = datenum(<span class="string">'15-Mar-2015'</span>);
+<span class="comment">% Output:</span>
+<span class="comment">%</span>
+<span class="comment">%  European Call        = 9.07575948404277</span>
+<span class="comment">%  European Put         = 0.27659855572086</span>
+<span class="comment">%  Intrinsic Value Call = 9.19794779773544</span>
+<span class="comment">%  Intrinsic Value Put  = 0</span>
+<span class="comment">%  American Call        = 9.19794779773544</span>
+<span class="comment">%  American Put         = 0.27659855572086</span>
+<span class="comment">%</span>
+<span class="comment">%  premium = price ./ 100</span>
+<span class="comment">%</span>
+premium = besaoption(0.135,0.1500,datenum(<span class="string">'5-Nov-1998 16:00:00'</span>), <span class="keyword">...</span>
+    0.09,0.145,datenum(<span class="string">'17-Feb-1998 16:00:00'</span>),3,detail3)
+</pre><pre class="codeoutput">premium =
+  Columns 1 through 5 
+   9.07575948404277   0.27659855572086   9.19794779773544                  0   9.19794779773544
+  Column 6 
+   0.27659855572086
+</pre><h2>Vectorized Bond Details for pricing examples<a name="5"></a></h2>
+         <div>
+            <ul>
+               <li>R150</li>
+               <li>R157</li>
+               <li>R153</li>
+            </ul>
+         </div><pre class="codeinput">detail.code     = {<span class="string">'R153'</span>, <span class="string">'R150'</span>,<span class="string">'R157'</span>};
+detail.coupon   = [0.13; 0.12; 0.135];
+detail.maturity = datenum({<span class="string">'31-Aug-2010'</span>;<span class="string">'28-Feb-2005'</span>;<span class="string">'15-Sep-2015'</span>});
+detail.ldr1     = datenum({<span class="string">'31-Jan-1991'</span>;<span class="string">'31-Jan-1991'</span>;<span class="string">'15-Feb-1991'</span>});
+detail.ldr2     = datenum({<span class="string">'31-Jul-1991'</span>;<span class="string">'31-Jul-1991'</span>;<span class="string">'15-Aug-1991'</span>});
+detail.pay1     = datenum({<span class="string">'28-Feb-1991'</span>;<span class="string">'28-Feb-1991'</span>;<span class="string">'15-Mar-1991'</span>});
+detail.pay2     = datenum({<span class="string">'31-Aug-1991'</span>;<span class="string">'31-Aug-1991'</span>;<span class="string">'15-Sep-1991'</span>});
+detail.onebeforelast = datenum({<span class="string">'28-Feb-2010'</span>;<span class="string">'31-Aug-2004'</span>;<span class="string">'15-Mar-2015'</span>});
+<span class="comment">% Option Details</span>
+spots       = [0.135; 0.135; 0.135];
+strikes     = [0.135; 0.1371566; 0.150];
+expiries    = {<span class="string">'17-Feb-1998 16:00:00'</span>;<span class="string">'17-Feb-2000 16:00:00'</span>;<span class="string">'5-Nov-1998 16:00:00'</span>};
+vols        = [0.10;0.10;0.09];
+rates       = [0.145;0.145;0.145];
+value_dates = {<span class="string">'17-Feb-1998 10:00:00'</span>;<span class="string">'17-Feb-1998 16:00:00'</span>;<span class="string">'17-Feb-1998 16:00:00'</span>};
+ts          = [3;3;3];
+<span class="comment">% Compute</span>
+premium = besaoption(spots,strikes,datenum(expiries), <span class="keyword">...</span>
+    vols,rates,datenum(value_dates),ts,detail)
+</pre><pre class="codeoutput">premium =
+  Columns 1 through 5 
+   0.10118191629472   0.10118191629471                  0                  0   0.10118191629472
+   4.09769694262107   4.09768645909906   0.90846911765971                  0   4.09769694262107
+   9.07575948404277   0.27659855572086   9.19794779773544                  0   9.19794779773544
+  Column 6 
+   0.10118191629471
+   4.09768645909906
+   0.27659855572086
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.2<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% BESA OPTION PRICING FOR RISK MANAGEMENT TEST FILE
+%
+%    The test cases are taken from the following documenentation:
+% 
+%    1. Bond Pricing Formulae, BESA, Quant Financial Research 1997
+%    2. Option Pricing for Risk Management, BESA Quant Financial Research 1998 
+%    3. Buy/Sell Back(carries) and Forward Pricing, BESA, Quant Financial Research 1997 
+%    4. Risk Management Methodology, BESA, Quant Financial Research 1997
+% 
+
+%% Set up the format
+format long
+
+%% [1] Value of option on its last day R153
+%
+% * R153
+%
+detail1.code     = 'R153';
+detail1.coupon   =  0.13;
+detail1.maturity = datenum('31-Aug-2010');
+detail1.ldr1 = datenum('31-Jan-1991');
+detail1.ldr2 = datenum('31-Jul-1991');
+detail1.pay1 = datenum('28-Feb-1991');
+detail1.pay2 = datenum('31-Aug-1991');
+detail1.onebeforelast = datenum('28-Feb-2010');
+% Output:
+%  European Call        = 0.10118191629472
+%  European Put         = 0.10118191629471  
+%  Intrinsic Value Call = 0
+%  Intrinsic Value Put  = 0
+%  American Call        = 0.10118191629472
+%  American Put         = 0.10118191629471
+%
+%  premium = price ./ 100
+%
+premium = besaoption(0.135,0.135,datenum('17-Feb-1998 16:00:00'), ...
+    0.10,0.145,datenum('17-Feb-1998 10:00:00'),3,detail1)
+
+
+%% [2] Long option at the foward money R150
+%
+% * R150 
+%
+detail2.code     = 'R150';
+detail2.coupon   = 0.12;
+detail2.maturity = datenum('28-Feb-2005');
+detail2.ldr1     = datenum('31-Jan-1991');
+detail2.ldr2     = datenum('31-Jul-1991');
+detail2.pay1     = datenum('28-Feb-1991');
+detail2.pay2     = datenum('31-Aug-1991');
+detail2.onebeforelast = datenum('31-Aug-2004');
+% Output:
+%
+%  European Call        = 4.09769694262107
+%  European Put         = 4.09768645909906   
+%  Intrinsic Value Call = 0.90846911765971
+%  Intrinsic Value Put  = 0
+%  American Call        = 4.09769694262107
+%  American Put         = 4.09768645909906
+%
+%  premium = price ./ 100
+%
+premium = besaoption(0.135,0.1371566,datenum('17-Feb-2000 16:00:00'), ...
+    0.10,0.145,datenum('17-Feb-1998 16:00:00'),3,detail2)  
+
+%% [3] The Call hits intrinsic R157
+%
+% * R157
+%
+detail3.code     = 'R157';
+detail3.coupon   = 0.135;
+detail3.maturity = datenum('15-Sep-2015');
+detail3.ldr1     = datenum('15-Feb-1991');
+detail3.ldr2     = datenum('15-Aug-1991');
+detail3.pay1     = datenum('15-Mar-1991');
+detail3.pay2    = datenum('15-Sep-1991');
+detail3.onebeforelast = datenum('15-Mar-2015'); 
+% Output:
+%
+%  European Call        = 9.07575948404277
+%  European Put         = 0.27659855572086   
+%  Intrinsic Value Call = 9.19794779773544
+%  Intrinsic Value Put  = 0 
+%  American Call        = 9.19794779773544
+%  American Put         = 0.27659855572086
+%
+%  premium = price ./ 100
+%
+premium = besaoption(0.135,0.1500,datenum('5-Nov-1998 16:00:00'), ...
+    0.09,0.145,datenum('17-Feb-1998 16:00:00'),3,detail3)
+
+%% Vectorized Bond Details for pricing examples
+%
+% * R150 
+% * R157
+% * R153
+%
+detail.code     = {'R153', 'R150','R157'};
+detail.coupon   = [0.13; 0.12; 0.135];
+detail.maturity = datenum({'31-Aug-2010';'28-Feb-2005';'15-Sep-2015'});
+detail.ldr1     = datenum({'31-Jan-1991';'31-Jan-1991';'15-Feb-1991'});
+detail.ldr2     = datenum({'31-Jul-1991';'31-Jul-1991';'15-Aug-1991'});
+detail.pay1     = datenum({'28-Feb-1991';'28-Feb-1991';'15-Mar-1991'});
+detail.pay2     = datenum({'31-Aug-1991';'31-Aug-1991';'15-Sep-1991'});
+detail.onebeforelast = datenum({'28-Feb-2010';'31-Aug-2004';'15-Mar-2015'});
+% Option Details
+spots       = [0.135; 0.135; 0.135];
+strikes     = [0.135; 0.1371566; 0.150];
+expiries    = {'17-Feb-1998 16:00:00';'17-Feb-2000 16:00:00';'5-Nov-1998 16:00:00'};
+vols        = [0.10;0.10;0.09];
+rates       = [0.145;0.145;0.145];
+value_dates = {'17-Feb-1998 10:00:00';'17-Feb-1998 16:00:00';'17-Feb-1998 16:00:00'};
+ts          = [3;3;3];
+% Compute 
+premium = besaoption(spots,strikes,datenum(expiries), ...
+    vols,rates,datenum(value_dates),ts,detail)
+##### SOURCE END #####
+-->
+   </body>
+</html>
