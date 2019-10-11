@@ -1,0 +1,384 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Test Script #4 Simulated Annealing with large Synthetic Data</title>
+      <meta name="generator" content="MATLAB 7.8">
+      <meta name="date" content="2009-03-25">
+      <meta name="m-file" content="sectors_test_annealing_002"><style type="text/css">
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Test Script #4 Simulated Annealing with large Synthetic Data</h1>
+         <!--introduction-->
+         <p>Name: SECTORS_TEST_ANNEALING_001.M</p>
+         <p>Authors: Bongani Mbambiso, Tim Gebbie</p>
+         <p>This test script is part of the "Sector and State" toolbox SECTOR.ZIP. The data set considered has correlated Assets with
+            four clusters. The test script is developed to show that the algorithm picks up those clusters.
+         </p>
+         <p>References:</p><pre>1. J. D. Noh, Phys. Rev. E 61, 5981 (2000)
+1. L. Giada &amp; M. Marsili (2005) ...
+2. Marsili (2002) ...</pre><p>See Also: ANNEALING, CHANGE, SWEEP, MERGE, SPLIT, GROUND, RECALCULATE</p>
+         <!--/introduction-->
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">Clear the workspace</a></li>
+               <li><a href="#2">The algorithm used to control the entire algorithm</a></li>
+               <li><a href="#3">Rearrange the configuration several times for each cooling schedule</a></li>
+               <li><a href="#4">Input Data and Variables</a></li>
+               <li><a href="#5">Test 4.1: Correlated data with Four Clusters</a></li>
+            </ul>
+         </div>
+         <h2>Clear the workspace<a name="1"></a></h2><pre class="codeinput">clear <span class="string">all</span>; clc;
+</pre><h2>The algorithm used to control the entire algorithm<a name="2"></a></h2><pre class="codeinput">help <span class="string">annealing</span>
+</pre><pre class="codeoutput">  ANNEALING Find the maximum likelihood cluster configuration
+ 
+  [A] = ANNEALING(VARARGIN) Find the Maximum likelihood configuration, 
+  using the Metropolis Scheme or Simulated annealing method and 
+  the J.D. Noh's Model. The algorithm finds the ground state,which is the 
+  best configuration at the end of the algorithm simulation.
+ 
+  [A] = ANNEALING(DATA,IB,FB,T_STEPS,N_CYCLES,CF,CORR_M )  Uses the data
+  to compute the correlation matrix, which is used to find the maximum 
+  likelihood configuration of the data. CORR_M specifies the method used 
+  to compute correlation matrix. It takes values 1, 2, and 3, which 
+  represent 'Pearson', 'Kendal' and 'Spearman', respectively. All the other 
+  variables are annealing variables and they are described below.
+ 
+  [A] = ANNEALING(C,IB,FB,T_STEPS,N_CYCLES,CF)  Takes the correlation 
+  matrix, and use it to find the maximum likelihood configuration of 
+  the data. Other variables are Annealing input varaibles (see below).
+ 
+  A is the configuration data structure and has structure described below.
+  A(i)=j gives that the i-th object is in the j-th cluster. 
+  The configuration index I, where I(i,j)=k gives k object as the
+  j-th element of the i-th cluster. E(i) is the likelihood
+  per element of the i-th cluster. C is the similarity the correlation 
+  matrix. Here it can be taken as the Pearson matrix or Kendal's 
+  Coefficient. This is taken to be a square matrix of the size of the 
+  number of objects. 
+ 
+  ANNEALING VARIABLES:
+  IB       - initial beta
+  FB       - final beta
+  T_STEPS  - Steps of Temperature changes
+  CF       - factor for change in temperature
+ 
+ 
+  DATA STRUTURE OF THE CONFIGURATION [A]
+ 
+  Status of the system during the annealing process: 
+  These variables keep track of the current solution of the maximum 
+  likelihood problem.
+  A.N       - Original data size
+  A.a       - the current solution configuration
+  A.nc      - number of (non-empty) clusters in the current configuration
+  A.nec     - Index array of Non-empty clusters
+  A.b       - current inverse temperature (beta).
+  A.c       - internal correlations
+  A.C       - Correlation matrix
+  A.e       - energy (minus log of likelihood), which is being minimized.
+  A.n       - number of elements per cluster
+  A.I       - configuration index
+  A.t       - time, counts the number of steps.
+  A.cf      - cooling factor for delta_temperature
+  A.updates - no. of spin updates per sweep
+  A.merges  - number of merges per sweep  
+  A.splits  - number of splits per sweep
+  A.t_steps - number of sweeps between changes in temperature
+  A.cycle   - number of annealing/ temperature clycles
+  A.n_cycles- maximum number of annealing/ temperature clycles
+ 
+  Ground state parameters:
+  These paramters represent the final solution, the best configuration that
+  gives the best maximum likelihood.
+  A.gs.a       - the best configuration
+  A.gs.nc      - number of clusters in the final solution configuration
+  A.gs.nec     - Index array of Non-empty clusters
+  A.gs.b       - Ground state energy (per spin).
+  A.gs.c       - internal correlations
+  A.gs.C       - Correlation matrix
+  A.gs.e       - energy (minus log of likelihood),which is being minimized.
+  A.gs.I       - configuration index
+  A.gs.n       - number of ground state elements per cluster cluster
+  A.gs.t       - time, counts the number of steps.
+  A.gs.updates - no. of spin updates, per spin, per sweep, or
+                 the no. of times a better configuration was found in
+                 the same temperature or cooling schedule
+  A.gs.merges  - number of mergings, per sweep
+  A.gs.splits  - number of splitting, per sweep
+  A.gs.cycle   - number of annealing / temperature clycles
+ 
+ 
+  See Also : PEARSON, KENDALL, SPEARMAN, LIKELIHOOD, AVERAGING
+             CHANGE, ENERGY.
+ 
+  References:
+ 
+  1) J. D. Noh  (2000)
+  2) Marsili M. (2002)
+  3) L. Giada &amp; Marsili M (2005)
+  4) Metropolis, N., Rosenbluth. A. W. (1953)
+ 
+
+</pre><h2>Rearrange the configuration several times for each cooling schedule<a name="3"></a></h2><pre class="codeinput">help <span class="string">change</span>
+</pre><pre class="codeoutput">  CHANGE Find a new configuration. 
+ 
+  [A] = CHANGE(A) Change the configuration A by cycling through the current 
+  cluster configuration, with a constant temperature, find a new 
+  configuration A, with a better clustering solution.
+ 
+  This function rearranges a lattice configuration A, and finds a 
+  configuration which increased energy, at a constant temperation or 
+  cooling schedule. Configuration
+  membership index, INDEX, initial internal energies, E, at
+  a given inverse temperature BETA. NR is the number of
+  configuration changes. At time T.
+ 
+  First a random lattice configuration change is attempted
+  by swapping two elements between different clusters via a
+  lattice sweep. A random cluster merge is attempted. A 
+  random cluster split is attempted. 
+  
+  See Also: CFSWEEP, CFMERGE, CFSPLIT
+
+</pre><h2>Input Data and Variables<a name="4"></a></h2>
+         <p>Initial beta</p><pre class="codeinput">ib      = 1;
+<span class="comment">% Final beta</span>
+fb      = 5;
+<span class="comment">% Number of sweeps between changes in temperature</span>
+t_steps = 15;    <span class="comment">% temperature changes every t_steps</span>
+<span class="comment">% Max. number of annealing cycles</span>
+n_cycles= 1;
+<span class="comment">% Cooling Factor for delta_temperature</span>
+cf      = 0.997;
+</pre><h2>Test 4.1: Correlated data with Four Clusters<a name="5"></a></h2><pre class="codeinput">C41 = [[ 1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0.45]; <span class="keyword">...</span>
+   [0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,-.3,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  -.4,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+
+   [0,0,0,0,0,0,0,0,0,0,     1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.1,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.2,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.3,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.4,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.6,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5,  -0.5,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5,  -0.4,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5,  -0.3,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5,  -0.2,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1,  -0.1,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+
+   [0,0,0,0,0,0,0,0,0,0,   -.1,-.2,-.3,-.4,-.6,-.5,-.4,-.3,-.2,-0.1,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1,  0,0,0,0,0,0,0,0,0,0]; <span class="keyword">...</span>
+
+   [0,0,0,0,0,0,0,0,0,-0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,    1, 0.1, 0.1, 0.1,-0.1,-0.2, 0.1, 0.3, 0.4, 0.5]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,-.3,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1,   1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.3]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1, 0.1,-0.1]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1,-0.2]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0, -0.2, 0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0, -0.1, 0.1, 0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1]; <span class="keyword">...</span>
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,   1, 0.1]; <span class="keyword">...</span>
+   [0.45,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.5, 0.4, 0.3,-0.1,-0.2, 0.1, 0.1, 0.1, 0.1,  1]];
+
+<span class="comment">% Generating Correlated Data</span>
+data41 = mvnrnd(zeros(40,1),C41,100);
+
+<span class="comment">% Test 4.1.1: Use ANNEALING to generate clusters from the correlations</span>
+[A] = annealing(C41,ib,fb,t_steps,n_cycles,cf);
+
+
+<span class="comment">% Membership Matrix: Rows-Clusters, Columns-Objects</span>
+A.gs.I
+</pre><pre class="codeoutput">Error using ==&gt; mvnrnd at 118
+SIGMA must be a symmetric positive semi-definite matrix.
+
+Error in ==&gt; sectors_test_annealing_002 at 91
+data41 = mvnrnd(zeros(40,1),C41,100); 
+</pre><p class="footer"><br>
+            Published with MATLAB&reg; 7.8<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Test Script #4 Simulated Annealing with large Synthetic Data 
+%
+% Name: SECTORS_TEST_ANNEALING_001.M
+%
+% Authors: Bongani Mbambiso, Tim Gebbie
+%
+% This test script is part of the "Sector and State" toolbox SECTOR.ZIP.
+% The data set considered has correlated Assets with four clusters. The 
+% test script is developed to show that the algorithm picks up 
+% those clusters.
+%
+%
+% References:
+%
+%  1. J. D. Noh, Phys. Rev. E 61, 5981 (2000)
+%  1. L. Giada & M. Marsili (2005) ...
+%  2. Marsili (2002) ... 
+%
+% See Also: ANNEALING, CHANGE, SWEEP, MERGE, SPLIT, GROUND, RECALCULATE 
+
+% $Revision: 1.1 $ $Date: 2009/02/06 13:12:20 $ $Author: Tim Gebbie $
+
+%% Clear the workspace
+clear all; clc;
+
+%% The algorithm used to control the entire algorithm
+help annealing 
+
+%% Rearrange the configuration several times for each cooling schedule 
+help change 
+
+%% Input Data and Variables 
+% Initial beta
+ib      = 1;     
+% Final beta
+fb      = 5;  
+% Number of sweeps between changes in temperature
+t_steps = 15;    % temperature changes every t_steps 
+% Max. number of annealing cycles                   
+n_cycles= 1; 
+% Cooling Factor for delta_temperature
+cf      = 0.997; 
+
+%% Test 4.1: Correlated data with Four Clusters
+C41 = [[ 1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0.45]; ...
+   [0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...
+   [0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...
+   [0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...
+   [0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...   
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...  
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...   
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1, 0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0,-.3,0,0,0,0,0,0,0,0]; ...
+   [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4,   1,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  -.4,0,0,0,0,0,0,0,0,0]; ...
+          
+   [0,0,0,0,0,0,0,0,0,0,     1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.1,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...  
+   [0,0,0,0,0,0,0,0,0,0,   0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.2,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.3,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.4,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5, 0.5,  -0.6,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...  
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5, 0.5,  -0.5,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5, 0.5,  -0.4,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ...
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5, 0.5,  -0.3,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1, 0.5,  -0.2,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,   1,  -0.1,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0]; ... 
+          
+   [0,0,0,0,0,0,0,0,0,0,   -.1,-.2,-.3,-.4,-.6,-.5,-.4,-.3,-.2,-0.1,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ... 
+       
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ...  
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ...  
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3, 0.3,  0,0,0,0,0,0,0,0,0,0]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1, 0.3,  0,0,0,0,0,0,0,0,0,0]; ...  
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3,   1,  0,0,0,0,0,0,0,0,0,0]; ... 
+          
+   [0,0,0,0,0,0,0,0,0,-0.4,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,    1, 0.1, 0.1, 0.1,-0.1,-0.2, 0.1, 0.3, 0.4, 0.5]; ... 
+   [0,0,0,0,0,0,0,0,-.3,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1,   1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.4]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.3]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1, 0.1,-0.1]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1,-0.2]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0, -0.2, 0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1, 0.1]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0, -0.1, 0.1, 0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1, 0.1]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.3, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,   1, 0.1, 0.1]; ... 
+   [0,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.4, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,   1, 0.1]; ... 
+   [0.45,0,0,0,0,0,0,0,0,0,   0,0,0,0,0,0,0,0,0,0,  0,0,0,0,0,0,0,0,0,0,  0.5, 0.4, 0.3,-0.1,-0.2, 0.1, 0.1, 0.1, 0.1,  1]];             
+
+% Generating Correlated Data 
+data41 = mvnrnd(zeros(40,1),C41,100); 
+
+% Test 4.1.1: Use ANNEALING to generate clusters from the correlations    
+[A] = annealing(C41,ib,fb,t_steps,n_cycles,cf);
+
+
+% Membership Matrix: Rows-Clusters, Columns-Objects
+A.gs.I
+
+##### SOURCE END #####
+-->
+   </body>
+</html>
