@@ -1,0 +1,208 @@
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>Script File to estimate log-periodic fit to USDZAR rand crash using MCMC</title>
+      <meta name="generator" content="MATLAB 7.1">
+      <meta name="date" content="2006-01-25">
+      <meta name="m-file" content="mcmclog_test_001"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows.  On Gecko-based browsers, the shrink-to-fit doesn't work. */ 
+p,h1,h2,div.content div {
+  /* for MATLAB's browser */
+  width: 600px;
+  /* for Mozilla, but the "width" tag overrides it anyway */
+  max-width: 600px;
+  /* for IE */
+  width:expression(document.body.clientWidth > 620 ? "600px": "auto" );
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h1>Script File to estimate log-periodic fit to USDZAR rand crash using MCMC</h1>
+         <introduction>
+            <p>Data is USD/ZAR over 15000 days starting in 1960</p>
+            <p>Algorithm implemented in MCMC.M :</p><pre>   1. Choose initial point in parameter space
+   2. Generate parameter jump from jump-pdf
+   3. Accept/reject jump - always accept better likelihoods
+                    reject with uniform probability
+   4. Check burn-in and convergence/mixing</pre><p>Function is:</p>
+            <p><img vspace="5" hspace="5" src="mcmclog_test_001_eq176507.png"> </p>
+            <p>From Sornette and Johansen, Quantitative Finance, 1, 452, 2001</p>
+            <p>Fitting Parameters are: (A, B, C, beta, t_c, w, phi)</p>
+            <p>dates are given in days since AD began but converted to approximate years using 365.25 d/yr</p>
+            <p>Bruce Bassett, Tim Gebbie</p>
+         </introduction>
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">Clear the workspace</a></li>
+               <li><a href="#2">Set initial conditions for parameter chain vector p</a></li>
+               <li><a href="#3">Load the data</a></li>
+               <li><a href="#4">Prepare the data</a></li>
+               <li><a href="#5">Estimate the parameters</a></li>
+               <li><a href="#6">Find the best theory</a></li>
+               <li><a href="#7">Plot the best theory</a></li>
+               <li><a href="#8">Plot the chains</a></li>
+            </ul>
+         </div>
+         <h2>Clear the workspace<a name="1"></a></h2><pre class="codeinput">clear <span class="string">all</span>;
+clc;
+</pre><h2>Set initial conditions for parameter chain vector p<a name="2"></a></h2><pre>  (A,B,C,BETA,TC,OMEGA,PHI)</pre><pre class="codeinput">para_str ={<span class="string">'A'</span>,<span class="string">'B'</span>,<span class="string">'C'</span>,<span class="string">'\beta'</span>,<span class="string">'t_c'</span>,<span class="string">'\omega'</span>,<span class="string">'\phi'</span>};
+epoch = <span class="string">'31-Jan-2000::31-Oct-2001'</span>;
+p0 = [3.5,-3,2.27,0.35,2003,7,-14]; <span class="comment">% initial parameters</span>
+pu = [1,1,1,1,0,10,1]; <span class="comment">% random weightings</span>
+</pre><h2>Load the data<a name="3"></a></h2><pre class="codeinput">load <span class="string">data/workspace_zar.mat</span>;  <span class="comment">% load file</span>
+</pre><h2>Prepare the data<a name="4"></a></h2><pre class="codeinput">plot(ZAR);
+data = fts2mat(ZAR(epoch).USDZAR,1);
+ytilde = log(data(:,2));  <span class="comment">% column data of ln(ZAR/USD) exchange rate (including NAN missing data)</span>
+t = data(:,1)./ 365.25;   <span class="comment">% dates for the data (days since AD began) convert days to years</span>
+chain_length = 3000;
+</pre><img vspace="5" hspace="5" src="mcmclog_test_001_01.png"> <h2>Estimate the parameters<a name="5"></a></h2><pre class="codeinput">[chains,chi2]=mcmc(@logp,t,ytilde,p0,pu,chain_length);
+</pre><h2>Find the best theory<a name="6"></a></h2>
+         <p>define theoretical prediction</p><pre class="codeinput">best_theory = logp(t,chains(end,:));
+</pre><h2>Plot the best theory<a name="7"></a></h2><pre class="codeinput">figure;
+plot(t, ytilde, t, best_theory);
+<span class="comment">% Check mixing/convergence using R-statistic (Verde et al)</span>
+</pre><img vspace="5" hspace="5" src="mcmclog_test_001_02.png"> <h2>Plot the chains<a name="8"></a></h2><pre class="codeinput">figure;
+<span class="keyword">for</span> i=1:length(chains),
+    subplot(4,2,i);
+    plot(chains(:,i));
+    title(para_str{i});
+<span class="keyword">end</span>;
+figure
+<span class="keyword">for</span> i=1:length(chains),
+    subplot(4,2,i);
+    hist(chains(:,i),40);
+    title(para_str{i});
+<span class="keyword">end</span>;
+</pre><pre class="codeoutput">Error using ==&gt; evalin
+Index exceeds matrix dimensions.</pre><img vspace="5" hspace="5" src="mcmclog_test_001_03.png"> <p class="footer"><br>
+            Published with MATLAB&reg; 7.1<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% Script File to estimate log-periodic fit to USDZAR rand crash using MCMC
+%
+% Data is USD/ZAR over 15000 days starting in 1960
+%
+% Algorithm implemented in MCMC.M :
+%     
+%     1. Choose initial point in parameter space
+%     2. Generate parameter jump from jump-pdf
+%     3. Accept/reject jump - always accept better likelihoods
+%                      reject with uniform probability 
+%     4. Check burn-in and convergence/mixing
+%
+% Function is: 
+%
+% $$ ln(t) = A + B(t_c-t)^\beta + C (t_c-t)^\beta cos( \omega ln(t_c-t) - \phi)$$
+%
+% From Sornette and Johansen, Quantitative Finance, 1, 452, 2001
+%
+% Fitting Parameters are: (A, B, C, beta, t_c, w, phi)
+%
+% dates are given in days since AD began but converted to approximate years using 365.25 d/yr
+%
+% Bruce Bassett, Tim Gebbie
+
+%% Clear the workspace
+clear all;
+clc;
+
+%% Set initial conditions for parameter chain vector p
+%    (A,B,C,BETA,TC,OMEGA,PHI)
+para_str ={'A','B','C','\beta','t_c','\omega','\phi'};
+epoch = '31-Jan-2000::31-Oct-2001';
+p0 = [3.5,-3,2.27,0.35,2003,7,-14]; % initial parameters
+pu = [1,1,1,1,0,10,1]; % random weightings
+
+%% Load the data
+load data/workspace_zar.mat;  % load file
+
+%% Prepare the data
+plot(ZAR);
+data = fts2mat(ZAR(epoch).USDZAR,1);
+ytilde = log(data(:,2));  % column data of ln(ZAR/USD) exchange rate (including NAN missing data)
+t = data(:,1)./ 365.25;   % dates for the data (days since AD began) convert days to years
+chain_length = 3000;
+
+%% Estimate the parameters
+[chains,chi2]=mcmc(@logp,t,ytilde,p0,pu,chain_length);
+
+%% Find the best theory
+% define theoretical prediction
+best_theory = logp(t,chains(end,:)); 
+
+%% Plot the best theory
+figure;
+plot(t, ytilde, t, best_theory);
+% Check mixing/convergence using R-statistic (Verde et al)
+
+%% Plot the chains
+figure;
+for i=1:length(chains),
+    subplot(4,2,i);
+    plot(chains(:,i));
+    title(para_str{i});
+end;
+figure
+for i=1:length(chains),
+    subplot(4,2,i);
+    hist(chains(:,i),40);
+    title(para_str{i});
+end;
+
+##### SOURCE END #####
+-->
+   </body>
+</html>
